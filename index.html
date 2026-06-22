@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>東勢大茅埔調查團生態紅外線相機監測分析平台</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -22,6 +22,7 @@
     body {
       font-family: 'Noto Sans TC', sans-serif;
       background-color: #f1f5f9;
+      overscroll-behavior-y: contain;
     }
     .gradient-bg {
       background: linear-gradient(135deg, #ecfdf5 0%, #f8fafc 100%);
@@ -30,15 +31,13 @@
       box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03), 0 2px 10px -1px rgba(0, 0, 0, 0.01);
     }
     /* Simple markdown rendering styles for AI response */
-    .prose h1 { font-size: 1.5rem; font-weight: 700; margin-top: 1rem; margin-bottom: 0.5rem; color: #0f172a; }
-    .prose h2 { font-size: 1.25rem; font-weight: 700; margin-top: 0.85rem; margin-bottom: 0.4rem; color: #1e293b; }
-    .prose h3 { font-size: 1.1rem; font-weight: 600; margin-top: 0.75rem; margin-bottom: 0.25rem; }
-    .prose p { margin-bottom: 0.75rem; line-height: 1.625; color: #334155; }
-    .prose ul, .prose ol { margin-left: 1.5rem; margin-bottom: 0.75rem; list-style-type: disc; }
-    .prose li { margin-bottom: 0.25rem; color: #334155; }
-    .prose strong { font-weight: 700; color: #0f172a; }
+    .prose h1 { font-size: 1.3rem; font-weight: 700; margin-top: 1rem; margin-bottom: 0.5rem; color: #0f172a; }
+    .prose h2 { font-size: 1.15rem; font-weight: 700; margin-top: 0.85rem; margin-bottom: 0.4rem; color: #1e293b; }
+    .prose h3 { font-size: 1.05rem; font-weight: 600; margin-top: 0.75rem; margin-bottom: 0.25rem; }
+    .prose p { margin-bottom: 0.6rem; line-height: 1.5; color: #334155; font-size: 13px; }
+    .prose ul, .prose ol { margin-left: 1.25rem; margin-bottom: 0.6rem; list-style-type: disc; }
+    .prose li { margin-bottom: 0.2rem; color: #334155; font-size: 13px; }
     
-    /* Force leaflet map container to occupy full layout width/height correctly */
     #map {
       height: 100%;
       width: 100%;
@@ -49,7 +48,6 @@
       right: 0;
     }
     
-    /* Leaflet popup customization for Light Theme */
     .leaflet-popup-content-wrapper {
       background: rgba(255, 255, 255, 0.95) !important;
       backdrop-filter: blur(4px);
@@ -62,159 +60,183 @@
       background: rgba(255, 255, 255, 0.95) !important;
       border: 1px solid #e2e8f0;
     }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
   </style>
 </head>
-<body class="text-slate-800 min-h-screen select-none p-4 md:p-8 flex items-center justify-center">
+<body class="text-slate-800 min-h-screen bg-slate-50 flex flex-col justify-between">
 
-  <!-- 主外殼窗器 (16:9比例 保證大螢幕視覺美感) -->
-  <div class="relative w-full max-w-[1440px] aspect-[16/9] mx-auto h-screen max-h-[860px] shadow-[0_10px_50px_rgba(0,0,0,0.06)] border border-slate-200/80 bg-slate-50 overflow-hidden rounded-3xl flex flex-col justify-between p-6 md:p-8 z-10">
+  <!-- 頂部導航欄 (Mobile Optimized) -->
+  <header class="gradient-bg border-b border-emerald-100/80 p-4 sticky top-0 z-40 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3">
+    <div class="flex items-center space-x-3 w-full sm:w-auto">
+      <div class="bg-emerald-600 p-2 rounded-xl text-white font-black text-xs shadow-md shadow-emerald-600/10 shrink-0">
+        <i class="fa-solid fa-mobile-screen-button"></i> AI
+      </div>
+      <div class="truncate">
+        <span class="text-[9px] uppercase tracking-wider text-emerald-800 block font-mono font-bold">Damaopu Eco-Monitoring Platform</span>
+        <span class="text-sm md:text-lg font-black bg-clip-text text-transparent bg-gradient-to-r from-emerald-950 to-slate-800 truncate block">大茅埔調查團生態相機監測分析平台</span>
+      </div>
+    </div>
     
-    <!-- 頂部通欄 -->
-    <header class="gradient-bg border-b border-emerald-100/80 pb-4 flex justify-between items-center rounded-t-2xl px-2">
-      <div class="flex items-center space-x-3">
-        <div class="bg-emerald-600 p-2 rounded-xl text-white font-black text-sm shadow-md shadow-emerald-600/10">
-          <i class="fa-solid fa-brain"></i> AI
-        </div>
-        <div>
-          <span class="text-[10px] uppercase tracking-wider text-emerald-800 block font-mono font-bold">Damaopu Eco-Monitoring Platform</span>
-          <span class="text-lg font-black bg-clip-text text-transparent bg-gradient-to-r from-emerald-950 to-slate-800">大茅埔調查團生態紅外線相機監測分析平台</span>
-        </div>
+    <!-- Action controls: Touch target optimized -->
+    <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
+      <div class="hidden sm:flex items-center space-x-1.5 text-xs font-bold px-2.5 py-1 bg-emerald-100/70 border border-emerald-200 text-emerald-800 rounded-full mr-2">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span>里山數據</span>
       </div>
       
-      <div class="flex items-center space-x-3">
-        <div class="flex items-center space-x-1.5 text-xs font-bold px-3 py-1.5 bg-emerald-100/70 border border-emerald-200 text-emerald-800 rounded-full">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mr-1"></span>
-          <span id="current-category">里山綠色數據庫</span>
+      <!-- Safe File upload input for Android Chrome with diverse MIMEs -->
+      <label for="csvFileInput" class="flex-grow sm:flex-grow-0 flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl cursor-pointer transition-all duration-200 shadow-md shadow-emerald-600/10 text-xs min-h-[44px]">
+        <i class="fa-solid fa-cloud-arrow-up"></i>
+        <span>上傳 CSV</span>
+      </label>
+      <input type="file" id="csvFileInput" accept=".csv, text/csv, text/comma-separated-values, application/vnd.ms-excel, text/plain" class="hidden" onchange="handleFileSelect(event)">
+      
+      <button onclick="loadDemoData()" class="flex-grow sm:flex-grow-0 flex items-center justify-center gap-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 font-bold py-2.5 px-4 rounded-xl transition-all duration-200 text-xs shadow-sm min-h-[44px]">
+        <span>展示數據</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- 主體視窗 -->
+  <main class="relative flex-grow flex items-center justify-center py-4 overflow-hidden w-full max-w-[1440px] mx-auto p-4">
+
+    <!-- Status Notification Bar (Dynamic Alerts) -->
+    <div id="statusAlert" class="hidden absolute top-2 left-4 right-4 p-3.5 rounded-xl border flex items-center justify-between transition-all duration-300 z-50 shadow-md bg-white">
+      <div class="flex items-center gap-2">
+        <span id="statusIcon" class="text-base"></span>
+        <div>
+          <h4 id="statusTitle" class="font-bold text-xs text-slate-800"></h4>
+          <p id="statusDesc" class="text-[9px] text-slate-500 mt-0.5"></p>
         </div>
-        
-        <label for="csvFileInput" class="flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-xl cursor-pointer transition-all duration-200 shadow-md shadow-emerald-600/10 text-xs">
-          <i class="fa-solid fa-cloud-arrow-up"></i>
-          上傳 CSV
-        </label>
-        <input type="file" id="csvFileInput" accept=".csv" class="hidden" onchange="handleFileSelect(event)">
-        
-        <button onclick="loadDemoData()" class="flex items-center justify-center gap-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 font-bold py-2 px-4 rounded-xl transition-all duration-200 text-xs shadow-sm">
-          展示數據
+      </div>
+      <button onclick="document.getElementById('statusAlert').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 min-w-[32px] min-h-[32px] flex items-center justify-center">
+        <i class="fa-solid fa-xmark text-sm"></i>
+      </button>
+    </div>
+
+    <!-- Welcome & Guide Section (Hidden after file loaded) -->
+    <div id="welcomeSection" class="bg-white rounded-3xl p-6 md:p-10 card-shadow border border-slate-100 text-center my-6 max-w-2xl mx-auto space-y-6 w-full overflow-y-auto max-h-full">
+      
+      <!-- Interactive Drag & Drop Area inside Welcome Card (Solid border) -->
+      <div id="dropZone" class="border border-slate-200 hover:border-emerald-500 bg-emerald-50/10 hover:bg-emerald-50/20 rounded-2xl p-6 md:p-10 cursor-pointer transition-all duration-200 group">
+        <div class="w-14 h-14 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-200">
+          <i class="fa-solid fa-map-location-dot text-xl text-emerald-600"></i>
+        </div>
+        <h2 class="text-lg font-bold text-slate-800 mb-1.5">生態大數據觀測分析平台</h2>
+        <p class="text-slate-500 text-xs max-w-md mx-auto leading-relaxed">
+          將大茅埔調查團標準格式的物種資料表(CSV)拖曳到此處，或點擊瀏覽上傳。
+        </p>
+        <span class="text-[10px] text-slate-400 underline block mt-3.5 group-hover:text-emerald-600 font-bold">點擊開啟檔案瀏覽器</span>
+      </div>
+
+      <!-- ✨ Mobile Debugger Log Terminal (Provides visible feedback if mobile load fails) -->
+      <div id="mobileDebugPanel" class="bg-slate-900 rounded-xl p-3.5 text-left font-mono text-[9px] text-slate-400 border border-slate-800 space-y-1 max-h-[110px] overflow-y-auto">
+        <div class="text-emerald-400 font-bold border-b border-slate-800 pb-1 flex justify-between">
+          <span>📋 系統實時診斷日誌 (Mobile Debugger)</span>
+          <span class="animate-pulse">● ONLINE</span>
+        </div>
+        <div id="debugLogs" class="space-y-0.5">
+          <div class="text-slate-500">&gt; 平台準備就緒，等待大茅埔 CSV 生態格式載入...</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-left text-[10px] text-slate-500 leading-normal">
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+          <div class="font-bold text-emerald-700 mb-0.5 flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> 衛星地表疊合</div>
+          自動提取相機 X, Y 座標（GPS經緯度）投影於 Esri 衛星圖層，直觀對應森林覆蓋。
+        </div>
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+          <div class="font-bold text-emerald-700 mb-0.5 flex items-center gap-1"><i class="fa-solid fa-clock"></i> 1h 歸併演算法</div>
+          剔除無效的「空拍」及動物滯留雜訊，1小時內重複觀測自動合併為1次獨立有效事件。
+        </div>
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+          <div class="font-bold text-emerald-700 mb-0.5 flex items-center gap-1"><i class="fa-solid fa-bolt"></i> Gemini 2.5 決策</div>
+          彙整獸夾、斷腿及遊蕩浪犬統計，結合大茅埔里山特色，智慧產生保育方案與企劃。
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard Content (Initially Hidden) -->
+    <div id="dashboardContent" class="hidden w-full h-full flex flex-col justify-start space-y-4">
+      
+      <!-- Mobile View Switch Tabs -->
+      <div class="flex md:hidden bg-slate-100 p-1.5 rounded-xl border border-slate-200/60 overflow-x-auto no-scrollbar scroll-smooth space-x-1 shrink-0">
+        <button onclick="switchMobileTab('tab-map')" id="btn-tab-map" class="mobile-tab-btn active bg-white text-emerald-800 font-extrabold px-4 py-2 rounded-lg text-xs transition duration-150 whitespace-nowrap flex items-center gap-1.5 shadow-sm">
+          <i class="fa-solid fa-map"></i>生態地圖
+        </button>
+        <button onclick="switchMobileTab('tab-trends')" id="btn-tab-trends" class="mobile-tab-btn bg-transparent text-slate-500 font-semibold px-4 py-2 rounded-lg text-xs transition duration-150 whitespace-nowrap flex items-center gap-1.5">
+          <i class="fa-solid fa-chart-line"></i>月份趨勢
+        </button>
+        <button onclick="switchMobileTab('tab-stats')" id="btn-tab-stats" class="mobile-tab-btn bg-transparent text-slate-500 font-semibold px-4 py-2 rounded-lg text-xs transition duration-150 whitespace-nowrap flex items-center gap-1.5">
+          <i class="fa-solid fa-table-list"></i>統計數據
+        </button>
+        <button onclick="switchMobileTab('tab-ai')" id="btn-tab-ai" class="mobile-tab-btn bg-transparent text-slate-500 font-semibold px-4 py-2 rounded-lg text-xs transition duration-150 whitespace-nowrap flex items-center gap-1.5">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>AI決策
+        </button>
+        <button onclick="switchMobileTab('tab-threats')" id="btn-tab-threats" class="mobile-tab-btn bg-transparent text-slate-500 font-semibold px-4 py-2 rounded-lg text-xs transition duration-150 whitespace-nowrap flex items-center gap-1.5">
+          <i class="fa-solid fa-triangle-exclamation"></i>威脅監控
         </button>
       </div>
-    </header>
 
-    <!-- 主體視窗 -->
-    <main class="relative flex-grow flex items-center justify-center py-4 overflow-hidden">
-
-      <!-- Status Notification Bar (Dynamic Alerts) -->
-      <div id="statusAlert" class="hidden absolute top-2 left-0 right-0 p-3 rounded-xl border flex items-center justify-between transition-all duration-300 z-50 mx-4 shadow-sm">
-        <div class="flex items-center gap-2">
-          <span id="statusIcon" class="text-base"></span>
-          <div>
-            <h4 id="statusTitle" class="font-bold text-sm"></h4>
-            <p id="statusDesc" class="text-[10px] text-slate-500 mt-0.5"></p>
-          </div>
+      <!-- KPI Summary Section (Always Visible) -->
+      <section class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 shrink-0 font-medium">
+        <div class="bg-white p-3 rounded-xl card-shadow border border-slate-100 flex flex-col justify-between">
+          <span class="text-slate-400 text-[9px] font-bold uppercase">總相機點位</span>
+          <span id="kpiCameras" class="text-lg font-black text-blue-600 leading-tight mt-0.5">-</span>
         </div>
-        <button onclick="document.getElementById('statusAlert').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
-          <i class="fa-solid fa-xmark text-xs"></i>
-        </button>
-      </div>
-
-      <!-- Welcome & Guide Section (Hidden after file loaded) -->
-      <div id="welcomeSection" class="bg-white rounded-3xl p-8 card-shadow border border-slate-100 text-center my-12 max-w-2xl mx-auto space-y-6">
-        
-        <!-- Interactive Drag & Drop Area inside Welcome Card (No dashed border, solid slate-200) -->
-        <div id="dropZone" class="border border-slate-200 hover:border-emerald-500 bg-emerald-50/10 hover:bg-emerald-50/20 rounded-2xl p-8 cursor-pointer transition-all duration-200 group">
-          <div class="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-200">
-            <i class="fa-solid fa-map-location-dot text-2xl text-emerald-600"></i>
-          </div>
-          <h2 class="text-xl font-bold text-slate-800 mb-1">開始您的里山大數據分析</h2>
-          <p class="text-slate-500 text-xs max-w-md mx-auto leading-relaxed">
-            將大茅埔調查團標準格式的物種資料表(CSV)拖曳到此處，或點擊瀏覽上傳。
-          </p>
-          <span class="text-[10px] text-slate-400 underline block mt-2 group-hover:text-emerald-600 font-bold">點擊開啟檔案瀏覽器</span>
+        <div class="bg-white p-3 rounded-xl card-shadow border border-slate-100 flex flex-col justify-between">
+          <span class="text-slate-400 text-[9px] font-bold uppercase">物種數</span>
+          <span id="kpiSpecies" class="text-lg font-black text-emerald-600 leading-tight mt-0.5">-</span>
         </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left text-[11px] text-slate-600">
-          <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
-            <div class="font-bold text-emerald-700 mb-1">① 衛星圖層疊合</div>
-            全新支援 Leaflet 與 Esri 高解析衛星圖層，能清晰辨識相機周邊林地覆蓋與人為果園。
-          </div>
-          <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
-            <div class="font-bold text-emerald-700 mb-1">② 2D GIS 相機地圖</div>
-            自動匹配數據中的 X, Y 經緯度座標，渲染出真實地理分佈、生態廊道與威脅紅區。
-          </div>
-          <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
-            <div class="font-bold text-emerald-700 mb-1">③ 1h 獨立歸併 & OI</div>
-            依一小時歸併原則計算各月份的獨立偵測數，提供真正的相對活動指數月份趨勢。
-          </div>
+        <div class="bg-white p-3 rounded-xl card-shadow border border-slate-100 flex flex-col justify-between">
+          <span class="text-slate-400 text-[9px] font-bold uppercase">原始筆數</span>
+          <span id="kpiRecords" class="text-lg font-black text-indigo-600 leading-tight mt-0.5">-</span>
         </div>
-      </div>
+        <div class="bg-white p-3 rounded-xl card-shadow border border-slate-100 flex flex-col justify-between">
+          <span class="text-slate-400 text-[9px] font-bold uppercase">獨立事件</span>
+          <span id="kpiEvents" class="text-lg font-black text-amber-500 leading-tight mt-0.5">-</span>
+        </div>
+        <div class="bg-white p-3 rounded-xl card-shadow border border-slate-100 flex flex-col justify-between col-span-2 lg:col-span-1">
+          <span class="text-slate-400 text-[9px] font-bold uppercase">估計總監測天數</span>
+          <span id="kpiTrapDays" class="text-lg font-black text-rose-500 leading-tight mt-0.5">-</span>
+        </div>
+      </section>
 
-      <!-- Dashboard Content (Initially Hidden) -->
-      <div id="dashboardContent" class="hidden w-full h-full overflow-y-auto space-y-6 pr-1">
-        
-        <!-- KPI Overview Cards -->
-        <section class="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          <div class="bg-white p-4 rounded-2xl card-shadow border border-slate-100 flex flex-col justify-between">
-            <span class="text-slate-400 text-[10px] font-bold tracking-wider uppercase">總觀測相機點位</span>
-            <div class="mt-1 flex items-baseline gap-1.5">
-              <span id="kpiCameras" class="text-2xl font-black text-blue-600">-</span>
-              <span class="text-slate-400 text-[10px]">個點位</span>
-            </div>
-          </div>
-          <div class="bg-white p-4 rounded-2xl card-shadow border border-slate-100 flex flex-col justify-between">
-            <span class="text-slate-400 text-[10px] font-bold tracking-wider uppercase">記錄偵測物種數</span>
-            <div class="mt-1 flex items-baseline gap-1.5">
-              <span id="kpiSpecies" class="text-2xl font-black text-emerald-600">-</span>
-              <span class="text-slate-400 text--[10px]">種</span>
-            </div>
-          </div>
-          <div class="bg-white p-4 rounded-2xl card-shadow border border-slate-100 flex flex-col justify-between">
-            <span class="text-slate-400 text-[10px] font-bold tracking-wider uppercase">原始照片/影片量</span>
-            <div class="mt-1 flex items-baseline gap-1.5">
-              <span id="kpiRecords" class="text-2xl font-black text-indigo-600">-</span>
-              <span class="text-slate-400 text-[10px]">筆</span>
-            </div>
-          </div>
-          <div class="bg-white p-4 rounded-2xl card-shadow border border-slate-100 flex flex-col justify-between">
-            <span class="text-slate-400 text-[10px] font-bold tracking-wider uppercase">獨立有效事件 (Events)</span>
-            <div class="mt-1 flex items-baseline gap-2">
-              <span id="kpiEvents" class="text-2xl font-black text-amber-500">-</span>
-              <span class="text-slate-400 text-xs">次 (1-hr)</span>
-            </div>
-          </div>
-          <div class="bg-white p-4 rounded-2xl card-shadow border border-slate-100 flex flex-col justify-between col-span-2 lg:col-span-1">
-            <span class="text-slate-400 text-[10px] font-bold tracking-wider uppercase">估計總監測天數</span>
-            <div class="mt-1 flex items-baseline gap-1.5">
-              <span id="kpiTrapDays" class="text-2xl font-black text-rose-500">-</span>
-              <span class="text-slate-400 text-[10px]">天</span>
-            </div>
-          </div>
-        </section>
+      <!-- Scrollable Container containing Content Segments -->
+      <div class="flex-grow overflow-y-auto pr-1 space-y-6">
 
-        <!-- GIS Spatial Section -->
-        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <!-- Interactive Map (Leaflet Satellite GIS) -->
-          <div class="bg-white p-5 rounded-2xl card-shadow border border-slate-100 lg:col-span-2 relative">
-            <div class="mb-3 flex justify-between items-center">
+        <!-- SEGMENT 1: GIS Map View -->
+        <div id="segment-map" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Interactive Map Container -->
+          <div class="bg-white p-4 md:p-5 rounded-2xl card-shadow border border-slate-100 lg:col-span-2">
+            <div class="mb-3 flex flex-col sm:flex-row justify-between sm:items-center gap-1.5">
               <div>
-                <h3 class="text-base font-bold text-slate-800 flex items-center gap-1.5">
-                  <span class="w-2 h-5 bg-emerald-600 rounded-full inline-block"></span>
-                  里山相機空間分佈與觀測示意圖 (GIS Satellite Map)
+                <h3 class="text-sm md:text-base font-bold text-slate-800 flex items-center gap-1.5">
+                  <span class="w-1.5 h-4.5 bg-emerald-600 rounded-full inline-block"></span>
+                  里山相機空間分佈與觀測示意圖 (GIS Map)
                 </h3>
-                <p class="text-slate-400 text-[10px]">疊合 Esri 全球高解析衛星圖層。點擊右側按鈕可無縫滿版切換圖層。</p>
+                <p class="text-slate-400 text-[9px]">自動根據 X, Y 座標比例繪製。紅色光圈代表存在斷腿/項圈浪犬等潛在威脅點位。</p>
               </div>
             </div>
             
-            <!-- Map Container with exact relative aspect ratio -->
-            <div class="h-[280px] rounded-2xl overflow-hidden border border-slate-200 shadow-inner relative" id="mapContainer">
+            <div class="h-[250px] md:h-[350px] rounded-xl overflow-hidden border border-slate-200 relative shadow-inner" id="mapContainer">
               <div id="map" class="w-full h-full z-0"></div>
               
-              <!-- Layer Controller -->
-              <div class="absolute top-2.5 right-2.5 z-[1000] bg-white/95 backdrop-blur-sm px-2 py-1 rounded-xl border border-slate-200 shadow-md flex items-center space-x-1.5 text-[10px] font-bold text-slate-700">
+              <!-- Layer Controller with Touch Sizes -->
+              <div class="absolute top-2.5 right-2.5 z-[1000] bg-white/95 backdrop-blur-sm px-2.5 py-1.5 rounded-xl border border-slate-200 shadow-md flex items-center space-x-2 text-[10px] font-bold text-slate-700">
                 <span>圖層：</span>
                 <button id="btnSatLayer" onclick="switchBaseLayer('satellite')" class="bg-emerald-600 text-white px-2 py-0.5 rounded-lg transition">衛星圖</button>
                 <button id="btnStreetLayer" onclick="switchBaseLayer('street')" class="bg-slate-100 text-slate-600 hover:bg-slate-200 px-2 py-0.5 rounded-lg transition">街道圖</button>
               </div>
 
-              <!-- Map Legend Overlay (No green dashed lines here) -->
+              <!-- Map Legend Overlay -->
               <div class="absolute bottom-2.5 left-2.5 z-[1000] bg-white/95 backdrop-blur-sm px-2.5 py-1.5 rounded-lg text-[9px] text-slate-600 font-mono flex flex-col gap-1 border border-slate-200 shadow-md pointer-events-none">
                 <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500 border border-white"></span> 安全觀測點位</div>
                 <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500 border border-white animate-pulse"></span> 威脅預警熱點 (斷腿/浪犬)</div>
@@ -223,17 +245,17 @@
           </div>
           
           <!-- Camera Spotlight Panel -->
-          <div class="bg-white p-5 rounded-2xl card-shadow border border-slate-100 flex flex-col justify-between">
+          <div class="bg-white p-4 md:p-5 rounded-2xl card-shadow border border-slate-100 flex flex-col justify-between">
             <div>
-              <h3 class="text-base font-bold text-slate-800 mb-0.5 flex items-center gap-1.5">
-                <span class="w-2 h-5 bg-teal-600 rounded-full inline-block"></span>
-                相機點位觀測聚光燈 (Spotlight)
+              <h3 class="text-sm md:text-base font-bold text-slate-800 mb-0.5 flex items-center gap-1.5">
+                <span class="w-1.5 h-4.5 bg-teal-600 rounded-full inline-block"></span>
+                相機觀測聚光燈 (Spotlight)
               </h3>
-              <p class="text-slate-400 text-[10px] mb-3">點選左側地圖中的相機標記，或點選下方表格，即刻聚焦地理與生態數據</p>
+              <p class="text-slate-400 text-[9px] mb-3">點選地圖中的相機標記，即可立刻提取點位的深度資料</p>
               
               <div id="cameraSpotlightEmpty" class="text-center py-12 text-slate-400">
-                <i class="fa-solid fa-eye text-2xl text-slate-300 mb-2"></i>
-                <p class="text-[10px]">請點擊左側衛星圖中的相機節點</p>
+                <i class="fa-solid fa-eye text-xl text-slate-300 mb-2"></i>
+                <p class="text-[9px]">請點擊左側衛星圖中的相機節點</p>
               </div>
               
               <div id="cameraSpotlightDetails" class="hidden space-y-3">
@@ -254,15 +276,15 @@
                 </div>
                 
                 <div>
-                  <span class="text-[10px] text-slate-400 block mb-1">偵測物種名錄：</span>
+                  <span class="text-[10px] text-slate-400 block mb-1 font-bold">偵測物種：</span>
                   <div id="spotlightSpeciesList" class="flex flex-wrap gap-1">
                     <!-- Dynamically populated -->
                   </div>
                 </div>
                 
                 <div>
-                  <span class="text-[10px] text-slate-400 block mb-1">威脅紀錄日誌：</span>
-                  <div id="spotlightThreats" class="max-h-[80px] overflow-y-auto space-y-1.5 pr-1">
+                  <span class="text-[10px] text-slate-400 block mb-1 font-bold">威脅紀錄日誌：</span>
+                  <div id="spotlightThreats" class="max-h-[90px] overflow-y-auto space-y-1.5 pr-1">
                     <!-- Dynamically populated -->
                   </div>
                 </div>
@@ -273,42 +295,42 @@
               <span class="text-[9px] text-slate-400">大茅埔里山守護計畫技術小組 2026 版</span>
             </div>
           </div>
-        </section>
+        </div>
 
-        <!-- Section: Monthly OI Chart & Camera summary -->
-        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- SEGMENT 2: Trends and Rhythms Graphs -->
+        <div id="segment-trends" class="hidden md:grid grid-cols-1 lg:grid-cols-3 gap-6">
           <!-- Monthly OI Trends Chart -->
-          <div class="bg-white p-5 rounded-2xl card-shadow border border-slate-100 lg:col-span-2">
+          <div class="bg-white p-4 md:p-5 rounded-2xl card-shadow border border-slate-100 lg:col-span-2">
             <div class="flex justify-between items-center mb-3">
               <div>
-                <h3 class="text-base font-bold text-slate-800 flex items-center gap-1.5">
-                  <span class="w-2 h-5 bg-blue-600 rounded-full inline-block"></span>
+                <h3 class="text-sm md:text-base font-bold text-slate-800 flex items-center gap-1.5">
+                  <span class="w-1.5 h-4.5 bg-blue-600 rounded-full inline-block"></span>
                   物種相對活動指數 (OI) 月份趨勢
                 </h3>
-                <p class="text-slate-400 text-[10px] mt-0.5">觀看物種在各點位的月份 OI 變化（排除空拍、經 1hr 歸併）</p>
+                <p class="text-slate-400 text-[9px] mt-0.5">觀看物種在各點位的月份 OI 變化（排除空拍、經 1hr 歸併）</p>
               </div>
-              <select id="speciesFilter" onchange="updateCharts()" class="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg p-1.5 font-bold focus:outline-emerald-500">
+              <select id="speciesFilter" onchange="updateCharts()" class="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-xl p-2 font-bold focus:outline-emerald-500">
                 <!-- Dynamic Options -->
               </select>
             </div>
-            <div class="h-64 relative">
+            <div class="h-56 md:h-64 relative">
               <canvas id="monthlyTrendChart"></canvas>
             </div>
           </div>
 
           <!-- Camera Information / Trap Days Summary -->
-          <div class="bg-white p-5 rounded-2xl card-shadow border border-slate-100 flex flex-col">
-            <h3 class="text-base font-bold text-slate-800 mb-0.5 flex items-center gap-1.5">
-              <span class="w-2 h-5 bg-indigo-600 rounded-full inline-block"></span>
+          <div class="bg-white p-4 md:p-5 rounded-2xl card-shadow border border-slate-100 flex flex-col">
+            <h3 class="text-sm md:text-base font-bold text-slate-800 mb-0.5 flex items-center gap-1.5">
+              <span class="w-1.5 h-4.5 bg-indigo-600 rounded-full inline-block"></span>
               各相機點位監測時段
             </h3>
-            <p class="text-slate-400 text-[10px] mb-3">由資料首尾日期推估之點位運作天數（用於計算 OI = Events / Days × 100）</p>
+            <p class="text-slate-400 text-[9px] mb-3">由資料首尾日期推估之點位運作天數（用於計算 OI）</p>
             <div class="overflow-y-auto flex-1 max-h-[220px] pr-1">
               <table class="w-full text-left text-xs text-slate-500">
-                <thead class="text-[10px] text-slate-400 uppercase bg-slate-50 sticky top-0">
+                <thead class="text-[9px] text-slate-400 uppercase bg-slate-50 sticky top-0">
                   <tr>
                     <th class="py-1 px-2">點位名稱</th>
-                    <th class="py-1 px-2 text-center">推估天數</th>
+                    <th class="py-1 px-2 text-center">天數</th>
                     <th class="py-1 px-2 text-right">起訖時間</th>
                   </tr>
                 </thead>
@@ -318,229 +340,18 @@
               </table>
             </div>
           </div>
-        </section>
 
-        <!-- Monthly Detailed Species OI Grid Matrix -->
-        <section class="bg-white p-5 rounded-2xl card-shadow border border-slate-100">
-          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-            <div>
-              <h3 class="text-base font-bold text-slate-800 flex items-center gap-1.5">
-                <span class="w-2 h-5 bg-cyan-600 rounded-full inline-block"></span>
-                依月份之全物種 OI 相對活動指數表
-              </h3>
-              <p class="text-slate-400 text-[10px] mt-0.5">
-                將數據依**月份**拆解，計算該月內物種的獨立事件數 $N_{event(month)}$ 與 OI 值（$\text{當月 Events} / \text{該點位總 Trap Days} \times 100$）
-              </p>
-            </div>
-            <div class="flex gap-2 w-full sm:w-auto">
-              <select id="monthlyOiMonthSelector" onchange="resetMonthlyOiPage(); renderMonthlyOiTable()" class="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg p-2 font-medium">
-                <option value="ALL">顯示所有月份</option>
-                <!-- Dynamic Options -->
-              </select>
-              <input type="text" id="monthlyOiSearch" oninput="resetMonthlyOiPage(); renderMonthlyOiTable()" placeholder="搜尋物種、點位..." class="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg p-2 w-full sm:w-48">
-            </div>
-          </div>
-          <div class="overflow-x-auto rounded-xl border border-slate-100">
-            <table class="w-full text-left text-xs text-slate-500">
-              <thead class="text-[10px] text-slate-700 uppercase bg-slate-100/80 font-bold">
-                <tr>
-                  <th class="py-2.5 px-4">月份</th>
-                  <th class="py-2.5 px-4">相機別名</th>
-                  <th class="py-2.5 px-4">物種俗名</th>
-                  <th class="py-2.5 px-4 text-center">當月獨立偵測數 (Events)</th>
-                  <th class="py-2.5 px-4 text-center">點位運作天數 (Trap Days)</th>
-                  <th class="py-2.5 px-4 text-right text-cyan-600 font-bold">相對活動指數 (Monthly OI)</th>
-                </tr>
-              </thead>
-              <tbody id="monthlyOiTableBody" class="divide-y divide-slate-100">
-                <!-- Dynamic Rows (Paginated dynamically) -->
-              </tbody>
-            </table>
-          </div>
-          <!-- Pagination for Monthly table -->
-          <div class="flex justify-between items-center mt-3 text-xs text-slate-500 px-2">
-            <span id="monthlyOiPageInfo">顯示第 1 頁</span>
-            <div class="flex space-x-1">
-              <button onclick="changeMonthlyOiPage(-1)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold">上一頁</button>
-              <button onclick="changeMonthlyOiPage(1)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold">下一頁</button>
-            </div>
-          </div>
-        </section>
-
-        <!-- Cumulative OI table -->
-        <section class="bg-white p-5 rounded-2xl card-shadow border border-slate-100">
-          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
-            <div>
-              <h3 class="text-base font-bold text-slate-800 flex items-center gap-1.5">
-                <span class="w-2 h-5 bg-emerald-500 rounded-full inline-block"></span>
-                累積總量 OI 值與獨立事件計算表
-              </h3>
-              <p class="text-slate-400 text-[10px] mt-0.5">獨立有效偵測數 $N_{event}$（間隔 $\ge 60$ 分鐘之紀錄）與整體相對活動指數 $OI = (N_{event} / \text{Trap Days}) \times 100$</p>
-            </div>
-            <div class="flex gap-2 w-full sm:w-auto">
-              <input type="text" id="oiTableSearch" oninput="resetOiTablePage(); renderOiTable()" placeholder="搜尋物種或相機別名..." class="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg p-2 w-full sm:w-48">
-              <button onclick="exportOiTable()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-3 rounded-lg text-xs transition duration-150">
-                匯出 CSV 報表
-              </button>
-            </div>
-          </div>
-          <div class="overflow-x-auto rounded-xl border border-slate-100">
-            <table class="w-full text-left text-xs text-slate-500">
-              <thead class="text-[10px] text-slate-700 uppercase bg-slate-100/80 font-bold">
-                <tr>
-                  <th class="py-2.5 px-4">相機別名</th>
-                  <th class="py-2.5 px-4">物種俗名</th>
-                  <th class="py-2.5 px-4 text-center">原始紀錄數</th>
-                  <th class="py-2.5 px-4 text-center">獨立事件數 (Events)</th>
-                  <th class="py-2.5 px-4 text-center">相機運作天數</th>
-                  <th class="py-2.5 px-4 text-right text-emerald-600 font-bold">總 OI 值 (相對活動指數)</th>
-                </tr>
-              </thead>
-              <tbody id="oiTableBody" class="divide-y divide-slate-100">
-                <!-- Dynamic Rows (Paginated dynamically) -->
-              </tbody>
-            </table>
-          </div>
-          <!-- Pagination for Cumulative Table -->
-          <div class="flex justify-between items-center mt-3 text-xs text-slate-500 px-2">
-            <span id="oiTablePageInfo">顯示第 1 頁</span>
-            <div class="flex space-x-1">
-              <button onclick="changeOiTablePage(-1)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold">上一頁</button>
-              <button onclick="changeOiTablePage(1)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold">下一頁</button>
-            </div>
-          </div>
-        </section>
-
-        <!-- Threat and Analyst Section -->
-        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <!-- Threat Risk List -->
-          <div class="bg-white p-5 rounded-2xl card-shadow border border-slate-100 lg:col-span-2 flex flex-col">
+          <!-- Species 24-Hour Activity Rhythm Chart -->
+          <div class="bg-white p-4 md:p-5 rounded-2xl card-shadow border border-slate-100 lg:col-span-2">
             <div class="flex justify-between items-center mb-3">
               <div>
-                <h3 class="text-base font-bold text-slate-800 flex items-center gap-1.5">
-                  <span class="w-2 h-5 bg-rose-500 rounded-full inline-block"></span>
-                  環境威脅事件監控 (流浪犬與獸夾斷腿傷殘)
-                </h3>
-                <p class="text-slate-400 text-[10px] mt-0.5">篩選俗名為「犬/狗」或備註含有「斷腿」、「帶項圈」、「跛腳」、「獸夾」、「傷」之紀錄</p>
-              </div>
-              <span id="threatCountBadge" class="bg-rose-100 text-rose-700 text-[10px] font-bold px-2.5 py-1 rounded-full border border-rose-200">
-                偵測到 0 筆威脅
-              </span>
-            </div>
-            
-            <div class="overflow-y-auto flex-1 max-h-[300px] pr-1 rounded-xl border border-slate-100">
-              <table class="w-full text-left text-xs text-slate-500">
-                <thead class="text-[10px] text-rose-700 uppercase bg-rose-50 sticky top-0 font-bold">
-                  <tr>
-                    <th class="py-2 px-3">時間</th>
-                    <th class="py-2 px-3">相機別名</th>
-                    <th class="py-2 px-3">物種/對象</th>
-                    <th class="py-2 px-3">威脅類型</th>
-                    <th class="py-2 px-3">備註敘述</th>
-                  </tr>
-                </thead>
-                <tbody id="threatTableBody" class="divide-y divide-slate-100">
-                  <!-- Dynamic Rows (Paginated dynamically) -->
-                </tbody>
-              </table>
-            </div>
-            <!-- Pagination for Threats -->
-            <div class="flex justify-between items-center mt-3 text-xs text-slate-500 px-2">
-              <span id="threatPageInfo">顯示第 1 頁</span>
-              <div class="flex space-x-1">
-                <button onclick="changeThreatPage(-1)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold">上一頁</button>
-                <button onclick="changeThreatPage(1)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold">下一頁</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Analyst Threat Assessment (Light Theme Premium Card) -->
-          <div class="bg-gradient-to-br from-emerald-500/5 to-teal-500/10 text-slate-800 p-5 rounded-2xl border border-emerald-500/10 card-shadow flex flex-col justify-between relative overflow-hidden">
-            <div class="absolute -right-10 -bottom-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl"></div>
-            <div class="relative z-10">
-              <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold mb-3 border border-emerald-200/50">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                資深生態分析師特稿
-              </div>
-              <h4 class="text-base font-bold mb-2 text-slate-900">里山生態安全風險評估</h4>
-              
-              <div class="space-y-3.5 text-slate-600 text-[11px] leading-relaxed">
-                <p>根據自動相機監測大數據，我們特別針對大茅埔里山邊緣的兩大生態威脅進行安全評估：</p>
-                <div>
-                  <strong class="text-rose-700">❶ 帶項圈與無項圈犬隻威脅：</strong>
-                  <p class="text-slate-500 mt-0.5">遊蕩犬隻在野外聚集會直接對山羌等草食哺乳動物造成極大的獵捕壓力與棲地干擾，導致其活動節律與廊道使用受阻。</p>
-                </div>
-                <div>
-                  <strong class="text-rose-700">❷ 非法殘肢/斷腿事件（獸夾與吊索）：</strong>
-                  <p class="text-slate-500 mt-0.5">備註出現的野生動物「斷腿」現象為非法獸夾或金屬吊索殘留之裝備生存危害，顯示里山果園與森林交界仍存有未清除陷阱，是亟待社區倡議解決的痛點。</p>
-                </div>
-              </div>
-            </div>
-            
-            <div class="mt-4 pt-3 border-t border-emerald-500/15 text-[10px] text-slate-400 flex justify-between items-center relative z-10">
-              <span>大茅埔調查團專家組</span>
-              <span class="text-rose-600 font-bold">風險級別：中高</span>
-            </div>
-          </div>
-        </section>
-
-        <!-- Gemini AI Co-Pilot Ecosystem Assistant -->
-        <section class="bg-gradient-to-br from-emerald-50 to-teal-50 p-5 md:p-6 rounded-2xl card-shadow border border-emerald-500/15">
-          <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
-            <div>
-              <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[9px] font-black shadow-sm mb-1.5">
-                <span class="animate-pulse">✨</span> Powered by Gemini 2.5 Flash
-              </div>
-              <h3 class="text-lg font-black text-slate-800 flex items-center gap-1.5">
-                ✨ AI 智慧里山創生與生態對策決策中心
-              </h3>
-              <p class="text-slate-500 text-[11px]">將當前匯入之相機大數據、威脅事件、與活動節律，即時串接生成里山永續保育指南與行銷旅遊方案。</p>
-            </div>
-            <div class="flex flex-wrap gap-2">
-              <button onclick="generateAiConservationReport()" id="btnAiReport" class="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white hover:text-emerald-300 font-bold py-2 px-3.5 rounded-xl transition duration-200 text-[11px] shadow-sm">
-                <span>✨ AI 棲地保育對策</span>
-              </button>
-              <button onclick="generateAiMarketingPlan()" id="btnAiMarketing" class="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white hover:text-emerald-100 font-bold py-2 px-3.5 rounded-xl transition duration-200 text-[11px] shadow-sm">
-                <span>✨ AI 綠色創生行銷</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- AI Output Window -->
-          <div class="bg-white/80 backdrop-blur-md rounded-xl border border-slate-200 p-4 shadow-inner relative">
-            <!-- Loading Overlay -->
-            <div id="aiLoadingOverlay" class="hidden absolute inset-0 bg-white/90 rounded-xl flex flex-col items-center justify-center gap-2 z-20">
-              <div class="relative w-10 h-16 flex items-center justify-center">
-                <div class="w-8 h-8 border-3 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
-              </div>
-              <div class="text-emerald-700 font-bold text-[11px] animate-pulse flex items-center gap-1">
-                <span>✨ Gemini 正在深入解構大茅埔觀測大數據...</span>
-              </div>
-            </div>
-
-            <!-- Output Display -->
-            <div id="aiOutputContent" class="prose max-w-none text-slate-600 text-xs min-h-[100px]">
-              <div class="flex flex-col items-center justify-center text-center py-6 text-slate-400">
-                <i class="fa-solid fa-lightbulb text-xl text-slate-300 mb-1.5 animate-bounce"></i>
-                <p class="text-[10px]">點選上方按鈕，即時結合當前 CSV 數據運行 AI 分析與對策。</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- Species Activity Rhythm -->
-        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <!-- Activity Rhythm Chart -->
-          <div class="bg-white p-5 rounded-2xl card-shadow border border-slate-100 lg:col-span-2">
-            <div class="flex justify-between items-center mb-3">
-              <div>
-                <h3 class="text-base font-bold text-slate-800 flex items-center gap-1.5">
-                  <span class="w-2 h-5 bg-amber-500 rounded-full inline-block"></span>
+                <h3 class="text-sm md:text-base font-bold text-slate-800 flex items-center gap-1.5">
+                  <span class="w-1.5 h-4.5 bg-amber-500 rounded-full inline-block"></span>
                   24 小時物種活動節律圖
                 </h3>
-                <p class="text-slate-400 text-[10px] mt-0.5">分析獨立有效偵測事件在 24 小時之時間頻率分佈（可切換不同物種）</p>
+                <p class="text-slate-400 text-[9px] mt-0.5">分析獨立有效偵測事件在 24 小時之時間頻率分佈（可切換不同物種）</p>
               </div>
-              <select id="rhythmSpeciesFilter" onchange="updateRhythmChart()" class="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg p-1.5 font-bold focus:outline-emerald-500">
+              <select id="rhythmSpeciesFilter" onchange="updateRhythmChart()" class="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-xl p-2 font-bold focus:outline-emerald-500">
                 <!-- Dynamic Options -->
               </select>
             </div>
@@ -550,22 +361,22 @@
           </div>
 
           <!-- Activity Categorization Summary -->
-          <div class="bg-white p-5 rounded-2xl card-shadow border border-slate-100 flex flex-col justify-between">
+          <div class="bg-white p-4 md:p-5 rounded-2xl card-shadow border border-slate-100 flex flex-col justify-between">
             <div>
-              <h3 class="text-base font-bold text-slate-800 mb-1 flex items-center gap-1.5">
-                <span class="w-2 h-5 bg-yellow-500 rounded-full inline-block"></span>
+              <h3 class="text-sm md:text-base font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                <span class="w-1.5 h-4.5 bg-yellow-500 rounded-full inline-block"></span>
                 物種日夜活動類型判定
               </h3>
-              <p class="text-slate-400 text-[10px] mb-3">依據偵測時段（白日 06-18，夜間 18-06）自動分類物種適應型態</p>
+              <p class="text-slate-400 text-[10px] mb-3">系統依據偵測時段自動分類物種適應型態</p>
               
               <div class="space-y-2 text-xs">
                 <div class="p-2 bg-indigo-50/50 rounded-lg border border-indigo-100/30 flex justify-between items-center">
                   <span class="text-indigo-800 font-bold flex items-center gap-1">🌙 典型夜行性</span>
-                  <span id="nocturnalSpeciesList" class="text-[10px] text-indigo-600 font-semibold text-right max-w-[160px] truncate">-</span>
+                  <span id="nocturnalSpeciesList" class="text-[9px] text-indigo-600 font-semibold text-right max-w-[160px] truncate">-</span>
                 </div>
                 <div class="p-2 bg-amber-50/50 rounded-lg border border-amber-100/30 flex justify-between items-center">
                   <span class="text-amber-800 font-bold flex items-center gap-1">☀️ 典型日行性</span>
-                  <span id="diurnalSpeciesList" class="text-[10px] text-amber-600 font-semibold text-right max-w-[160px] truncate">-</span>
+                  <span id="diurnalSpeciesList" class="text-[9px] text-amber-600 font-semibold text-right max-w-[160px] truncate">-</span>
                 </div>
                 <div class="p-2 bg-rose-50/50 rounded-lg border border-rose-100/30 flex justify-between items-center">
                   <span class="text-rose-800 font-bold flex items-center gap-1">🌅 晨昏/全天候性</span>
@@ -573,28 +384,236 @@
                 </div>
               </div>
             </div>
-            
-            <div class="mt-4 p-3 bg-slate-50 rounded-xl border border-slate-100 text-[10px] text-slate-500 leading-relaxed">
-              <span class="font-bold text-slate-700 block mb-0.5">💡 行銷與生態創生啟示：</span>
-              本分析可與社區里山生態導覽結合。針對日行性與晨昏性物種，可規劃低干擾生態廊道觀察點；而夜行性物種的活躍，則是「無毒友善農業」與「里山暗空保護」的最佳生態品牌背書。
-            </div>
           </div>
         </section>
 
-      </div>
-    </main>
+        <!-- SEGMENT 3: Paginated Data Tables -->
+        <div id="segment-stats" class="hidden md:block space-y-6">
+          <!-- Month-by-month Table -->
+          <section class="bg-white p-5 rounded-2xl card-shadow border border-slate-100">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+              <div>
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-1.5">
+                  <span class="w-2 h-5 bg-cyan-600 rounded-full inline-block"></span>
+                  依月份之全物種 OI 相對活動指數表
+                </h3>
+                <p class="text-slate-400 text-[10px] mt-0.5">
+                  將數據依**月份**拆解，計算該月內物種的獨立事件數 $N_{event(month)}$ 與 OI 值
+                </p>
+              </div>
+              <div class="flex gap-2 w-full sm:w-auto">
+                <select id="monthlyOiMonthSelector" onchange="resetMonthlyOiPage(); renderMonthlyOiTable()" class="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg p-2 font-medium">
+                  <option value="ALL">顯示所有月份</option>
+                  <!-- Dynamic Options -->
+                </select>
+                <input type="text" id="monthlyOiSearch" oninput="resetMonthlyOiPage(); renderMonthlyOiTable()" placeholder="搜尋物種、點位..." class="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg p-2 w-full sm:w-48">
+              </div>
+            </div>
+            <div class="overflow-x-auto rounded-xl border border-slate-100">
+              <table class="w-full text-left text-xs text-slate-500">
+                <thead class="text-[10px] text-slate-700 uppercase bg-slate-100/80 font-bold">
+                  <tr>
+                    <th class="py-2.5 px-4">月份</th>
+                    <th class="py-2.5 px-4">相機別名</th>
+                    <th class="py-2.5 px-4">物種俗名</th>
+                    <th class="py-2.5 px-4 text-center">當月獨立偵測數 (Events)</th>
+                    <th class="py-2.5 px-4 text-center">點位運作天數 (Trap Days)</th>
+                    <th class="py-2.5 px-4 text-right text-cyan-600 font-bold">相對活動指數 (Monthly OI)</th>
+                  </tr>
+                </thead>
+                <tbody id="monthlyOiTableBody" class="divide-y divide-slate-100">
+                  <!-- Dynamic Rows (Paginated dynamically) -->
+                </tbody>
+              </table>
+            </div>
+            <!-- Pagination for Monthly table -->
+            <div class="flex justify-between items-center mt-3 text-xs text-slate-500 px-2">
+              <span id="monthlyOiPageInfo">顯示第 1 頁</span>
+              <div class="flex space-x-1">
+                <button onclick="changeMonthlyOiPage(-1)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold">上一頁</button>
+                <button onclick="changeMonthlyOiPage(1)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold">下一頁</button>
+              </div>
+            </div>
+          </section>
 
-    <!-- Footer -->
-    <footer class="bg-slate-50 text-slate-400 text-center py-4 px-2 border-t border-slate-200/80 rounded-b-2xl text-[10px] flex flex-col sm:flex-row justify-between items-center gap-2">
-      <p>© 2026 大茅埔調查團(臺中市東勢創意執行協會) - 生態環境永續監測專案</p>
-      <div class="flex gap-4 text-slate-400 font-semibold">
-        <span class="hover:text-emerald-600 cursor-pointer">隱私權條款</span>
-        <span>•</span>
-        <span class="hover:text-emerald-600 cursor-pointer">技術支援：大茅埔調查團專家小組</span>
-      </div>
-    </footer>
+          <!-- Cumulative OI table -->
+          <section class="bg-white p-5 rounded-2xl card-shadow border border-slate-100">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+              <div>
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-1.5">
+                  <span class="w-2 h-5 bg-emerald-500 rounded-full inline-block"></span>
+                  累積總量 OI 值與獨立事件計算表
+                </h3>
+                <p class="text-slate-400 text-[10px] mt-0.5">獨立有效偵測數 $N_{event}$ 與整體相對活動指數 $OI = (N_{event} / \text{Trap Days}) \times 100$</p>
+              </div>
+              <div class="flex gap-2 w-full sm:w-auto">
+                <input type="text" id="oiTableSearch" oninput="resetOiTablePage(); renderOiTable()" placeholder="搜尋物種或相機別名..." class="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg p-2 w-full sm:w-48">
+                <button onclick="exportOiTable()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-3 rounded-lg text-xs transition duration-150">
+                  匯出 CSV 報表
+                </button>
+              </div>
+            </div>
+            <div class="overflow-x-auto rounded-xl border border-slate-100">
+              <table class="w-full text-left text-xs text-slate-500">
+                <thead class="text-[10px] text-slate-700 uppercase bg-slate-100/80 font-bold">
+                  <tr>
+                    <th class="py-2.5 px-4">相機別名</th>
+                    <th class="py-2.5 px-4">物種俗名</th>
+                    <th class="py-2.5 px-4 text-center">原始紀錄數</th>
+                    <th class="py-2.5 px-4 text-center">獨立事件數 (Events)</th>
+                    <th class="py-2.5 px-4 text-center">相機運作天數</th>
+                    <th class="py-2.5 px-4 text-right text-emerald-600 font-bold">總 OI 值 (相對活動指數)</th>
+                  </tr>
+                </thead>
+                <tbody id="oiTableBody" class="divide-y divide-slate-100">
+                  <!-- Dynamic Rows (Paginated dynamically) -->
+                </tbody>
+              </table>
+            </div>
+            <!-- Pagination for Cumulative Table -->
+            <div class="flex justify-between items-center mt-3 text-xs text-slate-500 px-2">
+              <span id="oiTablePageInfo">顯示第 1 頁</span>
+              <div class="flex space-x-1">
+                <button onclick="changeOiTablePage(-1)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold">上一頁</button>
+                <button onclick="changeOiTablePage(1)" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold">下一頁</button>
+              </div>
+            </div>
+          </section>
+        </div>
 
-  </div>
+        <!-- SEGMENT 4: Gemini AI Co-Pilot Ecosystem Assistant -->
+        <div id="segment-ai" class="hidden md:block">
+          <section class="bg-gradient-to-br from-emerald-50 to-teal-50 p-5 md:p-6 rounded-2xl card-shadow border border-emerald-500/15 space-y-4">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
+              <div>
+                <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[9px] font-black shadow-sm mb-1.5">
+                  <span class="animate-pulse">✨</span> Powered by Gemini 2.5 Flash
+                </div>
+                <h3 class="text-lg font-black text-slate-800 flex items-center gap-1.5">
+                  ✨ AI 智慧里山創生與生態對策決策中心
+                </h3>
+                <p class="text-slate-500 text-[11px]">將當前匯入之相機大數據即時串接生成里山永續保育指南與行銷旅遊方案。</p>
+              </div>
+              <div class="flex gap-2 w-full sm:w-auto">
+                <button onclick="generateAiConservationReport()" id="btnAiReport" class="flex-1 sm:flex-none flex items-center justify-center gap-1 bg-slate-900 hover:bg-slate-800 text-white hover:text-emerald-300 font-bold py-2.5 px-4 rounded-xl transition duration-200 text-xs shadow-sm min-h-[36px]">
+                  <span>✨ 棲地保育對策</span>
+                </button>
+                <button onclick="generateAiMarketingPlan()" id="btnAiMarketing" class="flex-1 sm:flex-none flex items-center justify-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white hover:text-emerald-100 font-bold py-2.5 px-4 rounded-xl transition duration-200 text-xs shadow-sm min-h-[36px]">
+                  <span>✨ 綠色創生行銷</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- AI Output Window -->
+            <div class="bg-white/80 backdrop-blur-md rounded-xl border border-slate-200 p-4 shadow-inner relative">
+              <!-- Loading Overlay -->
+              <div id="aiLoadingOverlay" class="hidden absolute inset-0 bg-white/90 rounded-xl flex flex-col items-center justify-center gap-2 z-20">
+                <div class="relative w-10 h-16 flex items-center justify-center">
+                  <div class="w-8 h-8 border-3 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+                </div>
+                <div class="text-emerald-700 font-bold text-[11px] animate-pulse">
+                  <span>✨ Gemini 正在深入解構觀測大數據...</span>
+                </div>
+              </div>
+
+              <!-- Output Display -->
+              <div id="aiOutputContent" class="prose max-w-none text-slate-600 text-xs min-h-[100px]">
+                <div class="flex flex-col items-center justify-center text-center py-6 text-slate-400">
+                  <i class="fa-solid fa-lightbulb text-xl text-slate-300 mb-1.5 animate-bounce"></i>
+                  <p class="text-[10px]">點選上方按鈕，即時結合當前 CSV 數據運行 AI 分析與對策。</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- SEGMENT 5: Environmental Threat Monitor Section -->
+        <div id="segment-threats" class="hidden md:grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Threat Risk List -->
+          <div class="bg-white p-5 rounded-2xl card-shadow border border-slate-100 lg:col-span-2 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-center mb-3">
+                <div>
+                  <h3 class="text-base font-bold text-slate-800 flex items-center gap-1.5">
+                    <span class="w-2 h-5 bg-rose-500 rounded-full inline-block"></span>
+                    環境威脅事件監控 (流浪犬與獸夾斷腿傷殘)
+                  </h3>
+                  <p class="text-slate-400 text-[10px] mt-0.5">篩選俗名為「犬/狗」或備註含有「斷腿」、「帶項圈」、「跛腳」、「獸夾」、「傷」之紀錄</p>
+                </div>
+                <span id="threatCountBadge" class="bg-rose-100 text-rose-700 text-[10px] font-bold px-2.5 py-1 rounded-full border border-rose-200">
+                  偵測到 0 筆威脅
+                </span>
+              </div>
+              
+              <div class="overflow-y-auto flex-1 max-h-[300px] pr-1 rounded-xl border border-slate-100">
+                <table class="w-full text-left text-xs text-slate-500">
+                  <thead class="text-[10px] text-rose-700 uppercase bg-rose-50 sticky top-0 font-bold">
+                    <tr>
+                      <th class="py-2 px-3">時間</th>
+                      <th class="py-2 px-3">相機別名</th>
+                      <th class="py-2 px-3">物種/對象</th>
+                      <th class="py-2 px-3">威脅類型</th>
+                      <th class="py-2 px-3">備註敘述</th>
+                    </tr>
+                  </thead>
+                  <tbody id="threatTableBody" class="divide-y divide-slate-100">
+                    <!-- Paginated -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            <!-- Pagination for Threats -->
+            <div class="flex justify-between items-center mt-3 text-[10px] text-slate-500 px-1 pt-2 border-t border-slate-100">
+              <span id="threatPageInfo">顯示第 1 頁</span>
+              <div class="flex space-x-1.5">
+                <button onclick="changeThreatPage(-1)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold min-h-[28px]">上一頁</button>
+                <button onclick="changeThreatPage(1)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded font-bold min-h-[28px]">下一頁</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Analyst Threat Assessment -->
+          <div class="bg-gradient-to-br from-emerald-505 to-teal-500/10 text-slate-800 p-5 rounded-2xl border border-emerald-500/10 card-shadow flex flex-col justify-between relative overflow-hidden">
+            <div class="absolute -right-10 -bottom-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl"></div>
+            <div class="relative z-10">
+              <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold mb-3 border border-emerald-200/50">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                大茅埔調查團特稿
+              </div>
+              <h4 class="text-sm font-bold mb-1.5 text-slate-900">里山生態廊道風險評估</h4>
+              
+              <div class="space-y-3 text-slate-600 text-[10px] leading-relaxed">
+                <p>大茅埔與周邊淺山果園交界，正面臨人為金屬與外來種浪犬侵入的雙重威脅：</p>
+                <div>
+                  <strong class="text-rose-700">❶ 犬隻干擾：</strong>
+                  <p class="text-slate-500">不論是帶項圈的放養家犬或流浪犬群，均會嚴重壓迫本地山羌的棲地安全，干擾其全天候活動節律。</p>
+                </div>
+                <div>
+                  <strong class="text-rose-700">❷ 非法陷阱殘害：</strong>
+                  <p class="text-slate-500">照片備註錄得的斷腿與跛腳特徵，是金屬獸夾與俗稱「山豬吊」鋼索殘害的直接證據，亟待透過創意執行協會向社區果農進行安全宣導。</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="mt-4 pt-3 border-t border-emerald-500/15 text-[9px] text-slate-400 flex justify-between items-center relative z-10">
+              <span>東勢創意執行協會專家組</span>
+              <span class="text-rose-600 font-bold">風險級別：中高</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-slate-50 text-slate-400 text-center py-4 px-2 border-t border-slate-200/80 rounded-b-2xl text-[9px] flex flex-col sm:flex-row justify-between items-center gap-2 pb-16 md:pb-4">
+    <p>© 2026 大茅埔調查團(臺中市東勢創意執行協會) - 生態環境永續監測專案</p>
+    <div class="flex gap-4 text-slate-400 font-semibold">
+      <span>技術支援：大茅埔調查團專家小組</span>
+    </div>
+  </footer>
 
   <script>
     // Global State
@@ -604,8 +623,8 @@
     let cameraDaysMap = {}; // Camera -> { startDate, endDate, days }
     let speciesList = [];
     let cameraList = [];
-    let monthlyOiDataset = []; // Monthly dynamic stats
-    let rawCumulativeMatrix = []; // Cached flat cumulative matrix for pagination
+    let monthlyOiDataset = []; // Monthly stats cache
+    let rawCumulativeMatrix = []; // Cumulative stats cache
     
     // Pagination Configurations
     let monthlyOiPage = 1;
@@ -629,10 +648,77 @@
     let monthlyTrendChartInstance = null;
     let rhythmChartInstance = null;
 
+    // Mobile Active tab marker
+    let activeMobileTabId = 'tab-map';
+
+    // ✨ Mobile Logger System: Output logs directly onto the HTML screen for quick diagnostics
+    function logDebug(message, type = 'info') {
+      const panel = document.getElementById('debugLogs');
+      if (!panel) return;
+      
+      const div = document.createElement('div');
+      let colorClass = 'text-slate-400';
+      if (type === 'success') colorClass = 'text-emerald-400 font-semibold';
+      if (type === 'error') colorClass = 'text-rose-400 font-bold';
+      if (type === 'warning') colorClass = 'text-amber-400';
+      
+      div.className = `${colorClass} leading-relaxed`;
+      div.innerHTML = `&gt; ${new Date().toLocaleTimeString()} [${type.toUpperCase()}] ${message}`;
+      
+      panel.appendChild(div);
+      panel.scrollTop = panel.scrollHeight; // Auto-scroll to bottom
+      console.log(`[EcoDebugger] ${message}`);
+    }
+
+    // ✨ Automatic Sandbox Detector for Android Chrome Local Open
+    window.addEventListener('DOMContentLoaded', () => {
+      logDebug("系統底層初始化完成，監聽各解析通道...");
+      const helper = document.getElementById('sandboxHelperCard');
+      const isContentProtocol = window.location.protocol === 'content:' || window.location.protocol === 'file:';
+      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      if (isContentProtocol && isMobileDevice) {
+        helper.classList.remove('hidden');
+        logDebug("警告：偵測到您在 Android 本地沙盒 (content://) 環境下，讀取權限可能受限。", "warning");
+      }
+    });
+
+    // Mobile Tab Switch
+    function switchMobileTab(tabId) {
+      activeMobileTabId = tabId;
+      document.querySelectorAll('.mobile-tab-btn').forEach(btn => {
+        btn.classList.remove('active', 'bg-white', 'text-emerald-800', 'font-extrabold', 'shadow-sm');
+        btn.classList.add('bg-transparent', 'text-slate-500', 'font-semibold');
+      });
+
+      const activeBtn = document.getElementById(`btn-${tabId}`);
+      if (activeBtn) {
+        activeBtn.classList.remove('bg-transparent', 'text-slate-500', 'font-semibold');
+        activeBtn.classList.add('active', 'bg-white', 'text-emerald-800', 'font-extrabold', 'shadow-sm');
+      }
+
+      document.getElementById('segment-map').classList.add('hidden', 'md:grid');
+      document.getElementById('segment-trends').classList.add('hidden', 'md:grid');
+      document.getElementById('segment-stats').classList.add('hidden', 'md:block');
+      document.getElementById('segment-ai').classList.add('hidden', 'md:block');
+      document.getElementById('segment-threats').classList.add('hidden', 'md:grid');
+
+      if (tabId === 'tab-map') {
+        document.getElementById('segment-map').classList.remove('hidden', 'md:grid');
+        setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); }, 80);
+      } else if (tabId === 'tab-trends') {
+        document.getElementById('segment-trends').classList.remove('hidden', 'md:grid');
+      } else if (tabId === 'tab-stats') {
+        document.getElementById('segment-stats').classList.remove('hidden', 'md:block');
+      } else if (tabId === 'tab-ai') {
+        document.getElementById('segment-ai').classList.remove('hidden', 'md:block');
+      } else if (tabId === 'tab-threats') {
+        document.getElementById('segment-threats').classList.remove('hidden', 'md:grid');
+      }
+    }
+
     // Drag and Drop implementation
     const dropZone = document.getElementById('dropZone');
-    
-    // Clicking the dropZone triggers hidden file input
     dropZone.addEventListener('click', () => {
       document.getElementById('csvFileInput').click();
     });
@@ -651,64 +737,81 @@
       dropZone.classList.remove('border-emerald-600', 'bg-emerald-50/55');
       const file = e.dataTransfer.files[0];
       if (file && file.name.endsWith('.csv')) {
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          processCsvContent(evt.target.result);
-        };
-        reader.readAsText(file, 'UTF-8');
+        handleMobileFileLoad(file);
       } else {
         showStatusAlert('error', '❌ 格式錯誤', '僅支援上傳擴充名為 .csv 的生態觀測大數據檔案！');
+        logDebug("拖曳檔案並非 .csv 格式，已拒絕解析。", "error");
       }
     });
 
-    // Standard Demo Data to use if the user clicks "Use Demo Data"
-    const demoCsvText = `*相機編號,*物種編號,*相機別名,檔名,*資料產生日期與時間,*同群注記,*俗名,*數量,*數量單位,*保育等級,*特有種註記,*X座標,*Y座標,備註,*鑑定者,*資料紀錄者,*研究步驟名稱
-1,H,一號水圳觀測點,IMG_0001.MP4,2025/12/28  上午 10:15        41,,人類,1,人,無,無,24.192361,120.846,巡守隊員,吳哲銘,大茅埔調查團,紅外線自動相機調查法
-1,H,一號水圳觀測點,IMG_0002.MP4,2025/12/28  上午 10:16       105,,人類,1,人,無,無,24.192361,120.846,巡守隊員,吳哲銘,大茅埔調查團,紅外線自動相機調查法
-1,M,一號水圳觀測點,IMG_0003.MP4,2025/12/28  下午 03:36       125,,山羌,1,隻,無,特亞,24.192361,120.846,,吳哲銘,大茅埔調查團,紅外線自動相機調查法
-1,M,一號水圳觀測點,IMG_0004.MP4,2025/12/28  下午 04:15        37,,山羌,1,隻,無,特亞,24.192361,120.846,,吳哲銘,大茅埔調查團,紅外線自動相機調查法
-3,E,天公廟竹林稜線,IMG_0161.MP4,2026/01/27  上午 11:57        62,,空拍,1,隻,無,無,24.195123,120.849,強風吹動,吳哲銘,大茅埔調查團,紅外線自動相機調查法
-3,E,天公廟竹林稜線,IMG_0162.MP4,2026/01/27  下午 12:00        60,,空拍,1,隻,無,無,24.195123,120.849,強風吹動,吳哲銘,大茅埔調查團,紅外線自動相機調查法
-3,M,天公廟竹林稜線,IMG_0164.MP4,2026/01/27  下午 09:22        63,,山羌,1,隻,無,特亞,24.195123,120.849,,吳哲銘,大茅埔調查團,紅外線自動相機調查法
-3,M,天公廟竹林稜線,IMG_0165.MP4,2026/01/27  下午 10:10        63,,山羌,1,隻,無,特亞,24.195123,120.849,斷腿,吳哲銘,大茅埔調查團,紅外線自動相機調查法
-2,C,後山林道點,IMG_0201.MP4,2026/02/14  下午 08:30        15,,白鼻心,1,隻,無,無,24.201452,120.852,,吳哲銘,大茅埔調查團,紅外線自動相機調查法
-2,C,後山林道點,IMG_0202.MP4,2026/02/14  下午 09:15        15,,白鼻心,1,隻,無,無,24.201452,120.852,,吳哲銘,大茅埔調查團,紅外線自動相機調查法
-2,D,後山林道點,IMG_0203.MP4,2026/02/14  下午 11:10        12,,犬,1,隻,無,無,24.201452,120.852,帶項圈犬隻,吳哲銘,大茅埔調查團,紅外線自動相機調查法
-2,W,後山林道點,IMG_0204.MP4,2026/03/10  上午 02:22        22,,鼬獾,1,隻,無,無,24.201452,120.852,,吳哲銘,大茅埔調查團,紅外線自動相機調查法
-2,W,後山林道點,IMG_0205.MP4,2026/03/10  上午 03:45        22,,鼬獾,1,隻,無,無,24.201452,120.852,,吳哲銘,大茅埔調查團,紅外線自動相機調查法
-1,K,一號水圳觀測點,IMG_0008.MP4,2026/04/15  上午 08:30         8,,台灣獼猴,1,隻,二級,特有,24.192361,120.846,,吳哲銘,大茅埔調查團,紅外線自動相機調查法
-1,K,一號水圳觀測點,IMG_0009.MP4,2026/04/15  上午 09:00         8,,台灣獼猴,1,隻,二級,特有,24.192361,120.846,,吳哲銘,大茅埔調查團,紅外線自動相機調查法
-3,M,天公廟竹林稜線,IMG_0170.MP4,2026/05/20  下午 03:30        10,,山羌,1,隻,無,特亞,24.195123,120.849,,吳哲銘,大茅埔調查團,紅外線自動相機調查法
-3,M,天公廟竹林稜線,IMG_0171.MP4,2026/05/20  下午 05:45        10,,山羌,1,隻,無,特亞,24.195123,120.849,斷腿,吳哲銘,大茅埔調查團,紅外線自動相機調查法
-2,B,後山林道點,IMG_0208.MP4,2026/06/18  下午 07:12        11,,野豬,1,隻,無,無,24.201452,120.852,,吳哲銘,大茅埔調查團,紅外線自動相機調查法`;
-
-    // Initialize Demo Data
-    function loadDemoData() {
-      processCsvContent(demoCsvText);
+    // ✨ Bulletproof File Selector Change Handler (Directly passes File objects to avoid Sandbox restriction)
+    function handleFileSelect(event) {
+      logDebug("觸獲手機檔案選擇器回調...");
+      const file = event.target.files[0];
+      if (!file) {
+        logDebug("未選取任何檔案。", "warning");
+        return;
+      }
+      handleMobileFileLoad(file);
     }
 
-    // ✨ Preprocess CSV content to fix formatting anomalies
-    function preprocessCsvText(text) {
-      // Replace literal string "\\n" or actual newline character directly followed by 上午/下午 with standard space
-      let processed = text.replace(/[\r\n]+(上午|下午)/g, ' $1');
-      processed = processed.replace(/\\n(上午|下午)/g, ' $1');
+    // ✨ HIGH-PERFORMANCE BINARY HEADER SNIFFER (Guarantees Big5 detection in all HTTPS environments)
+    function detectIsBig5(arrayBuffer) {
+      const view = new Uint8Array(arrayBuffer);
+      // Scan first 500 bytes for typical Big5 double-byte high ranges (0x81 - 0xFE)
+      let big5Score = 0;
+      let utf8Score = 0;
       
-      // Clean duplicate lines / format definitions
-      let lines = processed.split(/\r?\n/);
-      let cleanedLines = lines.filter(line => {
-        let trimmed = line.trim();
-        // Skip metadata lines or row index templates
-        if (trimmed.startsWith(',編號') || trimmed.includes('YYYY/MM/DD') || trimmed === '') return false;
-        return true;
-      });
+      for (let i = 0; i < Math.min(view.length - 1, 500); i++) {
+        const byte1 = view[i];
+        const byte2 = view[i+1];
+        
+        // Big5 ranges: lead byte 0x89-0xF9, trail byte 0x40-0x7E or 0xA1-0xFE
+        if (byte1 >= 0x89 && byte1 <= 0xF9 && ((byte2 >= 0x40 && byte2 <= 0x7E) || (byte2 >= 0xA1 && byte2 <= 0xFE))) {
+          big5Score++;
+        }
+        // UTF-8 multibyte lead checks (e.g. 0xE4-0xE9 for common Chinese Hanzi)
+        if (byte1 >= 0xE4 && byte1 <= 0xE9 && byte2 >= 0x80 && byte2 <= 0xBF) {
+          utf8Score++;
+        }
+      }
+      logDebug(`編碼特徵分數評估 -> Big5分數: ${big5Score}, UTF-8分數: ${utf8Score}`);
+      return big5Score > utf8Score;
+    }
+
+    // ✨ Safe File Loader utilizing FileReader's ArrayBuffer fallback to bypass Android Local Sandboxing
+    function handleMobileFileLoad(file) {
+      logDebug(`已選取檔案: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
       
-      return cleanedLines.join('\n');
+      const binaryReader = new FileReader();
+      
+      binaryReader.onerror = function(err) {
+        logDebug(`手機本地 FileReader 發生權限拒絕或讀取錯誤。錯誤詳細: ${err.target.error}`, "error");
+        showStatusAlert('error', '❌ 檔案讀取失敗', '手機系統可能限制了 Chrome 讀取此路徑下的檔案，建議換成在 Google 雲端碟下載之檔案選取。');
+      };
+
+      binaryReader.onload = function(evt) {
+        logDebug("取得檔案 ArrayBuffer 二進位資料塊，開始進行智能解碼...");
+        const buffer = evt.target.result;
+        const isBig5 = detectIsBig5(buffer);
+        
+        const textReader = new FileReader();
+        textReader.onload = function(textEvt) {
+          logDebug(`成功將檔案以 ${isBig5 ? 'Big5' : 'UTF-8'} 解碼為純文字。開始送入清洗管道...`, "success");
+          processCsvContent(textEvt.target.result);
+        };
+        
+        textReader.readAsText(file, isBig5 ? 'Big5' : 'UTF-8');
+      };
+      
+      // Read array buffer first to run binary checks safely without triggering silent browser crash
+      binaryReader.readAsArrayBuffer(file);
     }
 
     // Process Raw CSV Text
     function processCsvContent(csvText) {
       showStatusAlert('info', '⚙️ 正在清洗與重構數據...', '平台正在校對相機欄位、修正日期欄內換行，並套用 1-Hour 獨立事件計算模式。');
-
+      logDebug("套用智能正則預處理，正在合併欄位內部物理換行及不規則表頭欄位...");
       const cleanedCsv = preprocessCsvText(csvText);
 
       Papa.parse(cleanedCsv, {
@@ -716,6 +819,7 @@
         skipEmptyLines: true,
         complete: function(results) {
           if (results.errors.length > 0 && results.data.length === 0) {
+            logDebug(`PapaParse 嚴重解析失敗。錯誤詳情: ${JSON.stringify(results.errors)}`, "error");
             showStatusAlert('error', '❌ CSV 解析失敗', '請確認上傳的檔案是否為符合大茅埔調查團標準格式的生態 CSV。');
             return;
           }
@@ -729,33 +833,46 @@
             return cleanRow;
           });
 
+          logDebug(`PapaParse 成功載入原始資料: ${rawData.length} 列。進行里山點位GPS經緯度座標與一小時歸併校準...`);
+
           // Perform analysis
           try {
             analyzeData();
+            logDebug(`數據歸併校準完成。有效觀測事件: ${independentEvents.length} 次，威脅預警熱點: ${globalThreatLogs.length} 處！`, "success");
             showStatusAlert('success', '🎉 數據載入成功！', `成功匯入 ${rawData.length} 筆原始照片，已自動過濾「空拍」雜訊，並歸併出 ${independentEvents.length} 筆有效獨立物種觀測事件！`);
           } catch (e) {
             console.error(e);
+            logDebug(`里山指標計算異常崩潰。錯誤回報: ${e.message}`, "error");
             showStatusAlert('error', '❌ 數據分析時發生異常', `計算指標時出錯，此格式可能受損。錯誤詳情: ${e.message}`);
           }
         }
       });
     }
 
-    // ✨ ULTRA-ROBUST DATE-TIME PARSER using Regex to ignore arbitrary training garbage numbers
+    // ✨ Preprocess CSV content to fix formatting anomalies
+    function preprocessCsvText(text) {
+      let processed = text.replace(/[\r\n]+(上午|下午)/g, ' $1');
+      processed = processed.replace(/\\n(上午|下午)/g, ' $1');
+      let lines = processed.split(/\r?\n/);
+      let cleanedLines = lines.filter(line => {
+        let trimmed = line.trim();
+        if (trimmed.startsWith(',編號') || trimmed.includes('YYYY/MM/DD') || trimmed === '') return false;
+        return true;
+      });
+      return cleanedLines.join('\n');
+    }
+
+    // ✨ ULTRA-ROBUST DATE-TIME PARSER using Regex
     function parseCustomDateTime(dateTimeStr) {
       if (!dateTimeStr) return null;
-      
       let str = String(dateTimeStr).replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim();
-      
-      // 1. Direct Regex match for Date (YYYY/MM/DD or YYYY-MM-DD)
       let dateMatch = str.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
       if (!dateMatch) return null;
       
       let year = parseInt(dateMatch[1]);
-      let month = parseInt(dateMatch[2]) - 1; // 0-indexed month
+      let month = parseInt(dateMatch[2]) - 1;
       let day = parseInt(dateMatch[3]);
       
-      // 2. Direct Regex match for Time (HH:MM)
       let timeMatch = str.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
       let hour = 0;
       let minute = 0;
@@ -767,7 +884,6 @@
         if (timeMatch[3]) second = parseInt(timeMatch[3]);
       }
       
-      // 3. AM/PM adjustment based on Chinese indicators
       const isPM = str.includes('下午') || str.toUpperCase().includes('PM');
       const isAM = str.includes('上午') || str.toUpperCase().includes('AM');
       
@@ -778,53 +894,50 @@
       return isNaN(dateObj.getTime()) ? null : dateObj;
     }
 
-    // Helper to display status notification bar
-    function showStatusAlert(type, title, desc) {
-      const alertDiv = document.getElementById('statusAlert');
-      const iconSpan = document.getElementById('statusIcon');
-      const titleH4 = document.getElementById('statusTitle');
-      const descP = document.getElementById('statusDesc');
-
-      alertDiv.classList.remove('hidden', 'bg-blue-50', 'border-blue-200', 'text-blue-800', 'bg-emerald-50', 'border-emerald-200', 'text-emerald-800', 'bg-rose-50', 'border-rose-200', 'text-rose-800');
-
-      if (type === 'info') {
-        alertDiv.classList.add('bg-blue-50', 'border-blue-200', 'text-blue-800');
-        iconSpan.innerHTML = '<i class="fa-solid fa-circle-info"></i>';
-      } else if (type === 'success') {
-        alertDiv.classList.add('bg-emerald-50', 'border-emerald-200', 'text-emerald-800');
-        iconSpan.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
-      } else {
-        alertDiv.classList.add('bg-rose-50', 'border-rose-200', 'text-rose-800');
-        iconSpan.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
-      }
-
-      titleH4.textContent = title;
-      descP.textContent = desc;
-      alertDiv.classList.remove('hidden');
-    }
-
     // Core Analysis Logic
     function analyzeData() {
-      // Exclude blank or spacer header descriptions and "空拍"
+      // Find coordinates column names via partial matching
       cleanedData = rawData.filter(row => {
-        let speciesName = row['俗名'] || row['俗名'] || '';
-        let specNo = row['物種編號'] || '';
+        let speciesName = '';
+        for (let key in row) {
+          if (key.includes('俗名')) {
+            speciesName = row[key];
+            break;
+          }
+        }
+        
+        let specNo = row['物種編號'] || row['*物種編號'] || '';
         return speciesName && speciesName !== '空拍' && speciesName !== '編號' && speciesName !== '物種' && speciesName !== '俗名' && specNo !== '編號' && speciesName.trim() !== '';
       });
 
       cleanedData.forEach(row => {
-        let rawDate = row['資料產生日期與時間'] || row['資料產生日期與時間'];
+        let rawDate = '';
+        for (let key in row) {
+          if (key.includes('資料產生日期')) {
+            rawDate = row[key];
+            break;
+          }
+        }
         row._jsDate = parseCustomDateTime(rawDate);
       });
 
-      // Filter rows that did not parse successfully
       cleanedData = cleanedData.filter(row => row._jsDate !== null);
       cleanedData.sort((a, b) => a._jsDate - b._jsDate);
 
       // Estimate Camera Working Days (Trap Days)
       cameraDaysMap = {};
       cleanedData.forEach(row => {
-        let camera = row['相機別名'] || row['相機編號'] || '未知相機';
+        let camera = '未知相機';
+        for (let key in row) {
+          if (key.includes('相機別名') || key.includes('相機編號')) {
+            if (row[key] && row[key].trim() !== '') {
+              camera = row[key].trim();
+              break;
+            }
+          }
+        }
+        // Cache found standardised camera name in a safe property
+        row._cameraName = camera;
         let date = row._jsDate;
         
         if (!cameraDaysMap[camera]) {
@@ -847,8 +960,15 @@
       // Apply 1-Hour Independent Event Clustering Rule
       const groupedByCamSpec = {};
       cleanedData.forEach(row => {
-        let camera = row['相機別名'] || '未知相機';
-        let species = row['俗名'] || '未知物種';
+        let camera = row._cameraName;
+        let species = '未知物種';
+        for (let key in row) {
+          if (key.includes('俗名')) {
+            species = row[key];
+            break;
+          }
+        }
+        row._speciesName = species;
         let key = `${camera}::${species}`;
         
         if (!groupedByCamSpec[key]) {
@@ -880,19 +1000,17 @@
       const speciesSet = new Set();
       const cameraSet = new Set();
       independentEvents.forEach(row => {
-        let species = row['俗名'];
-        let camera = row['相機別名'];
+        let species = row._speciesName;
+        let camera = row._cameraName;
         if (species) speciesSet.add(species);
         if (camera) cameraSet.add(camera);
       });
       speciesList = Array.from(speciesSet);
       cameraList = Array.from(cameraSet);
 
-      // Process Monthly OI values for all species
       calculateMonthlyOiMatrix();
       buildCumulativeMatrix();
 
-      // Reset Page Counters on New File Upload
       monthlyOiPage = 1;
       oiTablePage = 1;
       threatPage = 1;
@@ -901,11 +1019,10 @@
       buildCameraDaysTable();
       populateDropdowns();
       
-      // ✨ Switch screen visibility FIRST so Leaflet map elements can determine exact dimensions
       document.getElementById('welcomeSection').classList.add('hidden');
       document.getElementById('dashboardContent').classList.remove('hidden');
 
-      // ✨ Delayed Rendering for Leaflet sizing alignment & Chart.js instances (Solves the "Gray Borders" Bug)
+      switchMobileTab(activeMobileTabId);
       requestAnimationFrame(() => {
         setTimeout(() => {
           renderOiTable();
@@ -913,7 +1030,7 @@
           analyzeThreats();
           updateCharts();
           renderCoordinateMap();
-        }, 150);
+        }, 120);
       });
     }
 
@@ -921,7 +1038,6 @@
     function calculateMonthlyOiMatrix() {
       monthlyOiDataset = [];
       const monthsSet = new Set();
-      
       independentEvents.forEach(row => {
         let d = row._jsDate;
         let yrMonth = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
@@ -929,7 +1045,6 @@
       });
       const sortedMonths = Array.from(monthsSet).sort();
 
-      // Initialize dropdown for monthly selection
       const monthSelector = document.getElementById('monthlyOiMonthSelector');
       monthSelector.innerHTML = '<option value="ALL">顯示所有月份</option>';
       sortedMonths.forEach(m => {
@@ -939,7 +1054,6 @@
         monthSelector.appendChild(opt);
       });
 
-      // Calculate Event frequencies per Month, Camera and Species
       let matrix = {};
       sortedMonths.forEach(m => {
         matrix[m] = {};
@@ -954,18 +1068,16 @@
       independentEvents.forEach(row => {
         let d = row._jsDate;
         let yrMonth = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
-        let cam = row['相機別名'];
-        let sp = row['俗名'];
-        
+        let cam = row._cameraName;
+        let sp = row._speciesName;
         if (matrix[yrMonth] && matrix[yrMonth][cam] && matrix[yrMonth][cam][sp] !== undefined) {
           matrix[yrMonth][cam][sp]++;
         }
       });
 
-      // Convert Matrix to Flat Dataset list
       for (let m of sortedMonths) {
         for (let cam of cameraList) {
-          let trapDays = cameraDaysMap[cam] ? cameraDaysMap[cam].days : 30; // standard fallback
+          let trapDays = cameraDaysMap[cam] ? cameraDaysMap[cam].days : 30;
           for (let sp of speciesList) {
             let events = matrix[m][cam][sp];
             if (events > 0) {
@@ -988,32 +1100,23 @@
     function buildCumulativeMatrix() {
       rawCumulativeMatrix = [];
       let oiMatrix = {};
-      
       cameraList.forEach(cam => {
         oiMatrix[cam] = {};
         speciesList.forEach(sp => {
-          oiMatrix[cam][sp] = {
-            rawRecords: 0,
-            events: 0,
-            days: cameraDaysMap[cam] ? cameraDaysMap[cam].days : 1
-          };
+          oiMatrix[cam][sp] = { rawRecords: 0, events: 0, days: cameraDaysMap[cam] ? cameraDaysMap[cam].days : 1 };
         });
       });
 
       cleanedData.forEach(row => {
-        let cam = row['相機別名'];
-        let sp = row['俗名'];
-        if (oiMatrix[cam] && oiMatrix[cam][sp]) {
-          oiMatrix[cam][sp].rawRecords++;
-        }
+        let cam = row._cameraName;
+        let sp = row._speciesName;
+        if (oiMatrix[cam] && oiMatrix[cam][sp]) oiMatrix[cam][sp].rawRecords++;
       });
 
       independentEvents.forEach(row => {
-        let cam = row['相機別名'];
-        let sp = row['俗名'];
-        if (oiMatrix[cam] && oiMatrix[cam][sp]) {
-          oiMatrix[cam][sp].events++;
-        }
+        let cam = row._cameraName;
+        let sp = row._speciesName;
+        if (oiMatrix[cam] && oiMatrix[cam][sp]) oiMatrix[cam][sp].events++;
       });
 
       for (let cam in oiMatrix) {
@@ -1034,163 +1137,99 @@
       }
     }
 
-    // ✨ Base Layer Swapping Logic
+    // Base Layer Swapping Logic
     function switchBaseLayer(layerName) {
       activeMapLayerName = layerName;
       const btnSat = document.getElementById('btnSatLayer');
       const btnStreet = document.getElementById('btnStreetLayer');
-
       if (!mapInstance || !mapBaseLayers.satellite || !mapBaseLayers.street) return;
 
       if (layerName === 'satellite') {
         mapInstance.removeLayer(mapBaseLayers.street);
         mapInstance.addLayer(mapBaseLayers.satellite);
-        btnSat.className = "bg-emerald-600 text-white px-2 py-0.5 rounded-lg transition shadow-sm";
-        btnStreet.className = "bg-slate-100 text-slate-600 hover:bg-slate-200 px-2 py-0.5 rounded-lg transition shadow-sm";
+        btnSat.className = "bg-emerald-600 text-white px-2.5 py-1 rounded-lg transition shadow-sm";
+        btnStreet.className = "bg-slate-100 text-slate-600 hover:bg-slate-200 px-2.5 py-1 rounded-lg transition shadow-sm";
       } else {
         mapInstance.removeLayer(mapBaseLayers.satellite);
         mapInstance.addLayer(mapBaseLayers.street);
-        btnStreet.className = "bg-emerald-600 text-white px-2 py-0.5 rounded-lg transition shadow-sm";
-        btnSat.className = "bg-slate-100 text-slate-600 hover:bg-slate-200 px-2 py-0.5 rounded-lg transition shadow-sm";
+        btnStreet.className = "bg-emerald-600 text-white px-2.5 py-1 rounded-lg transition shadow-sm";
+        btnSat.className = "bg-slate-100 text-slate-600 hover:bg-slate-200 px-2.5 py-1 rounded-lg transition shadow-sm";
       }
     }
 
-    // ✨ Advanced GIS Map Leaflet.js Rendering Engine (No green polyline ecological corridors)
+    // Advanced GIS Map Leaflet.js Rendering Engine (No green line)
     function renderCoordinateMap() {
       const mapContainer = document.getElementById('map');
       const spotlightEmpty = document.getElementById('cameraSpotlightEmpty');
       const spotlightDetails = document.getElementById('cameraSpotlightDetails');
       
-      // Wipe map container if re-initializing to prevent Leaflet container duplicate init error
       if (mapInstance) {
         mapInstance.remove();
         mapInstance = null;
       }
 
-      // Collect valid coordinates from CSV columns
       let mapData = [];
       cameraList.forEach(cam => {
-        let sample = cleanedData.find(row => (row['相機別名'] || row['相機編號']) === cam);
+        let sample = cleanedData.find(row => row._cameraName === cam);
         if (sample) {
-          let rawX = parseFloat(String(sample['X座標'] || '').trim());
-          let rawY = parseFloat(String(sample['Y座標'] || '').trim());
+          // Robust Geoparsing via fuzzy column key lookups
+          let rawX = NaN;
+          let rawY = NaN;
+          for (let key in sample) {
+            if (key.includes('X座標') || key.includes('X坐标') || key.includes('X座標')) {
+              rawX = parseFloat(String(sample[key]).trim());
+            }
+            if (key.includes('Y座標') || key.includes('Y坐标') || key.includes('Y座標')) {
+              rawY = parseFloat(String(sample[key]).trim());
+            }
+          }
           
           if (!isNaN(rawX) && !isNaN(rawY)) {
-            // Robust check for Lon/Lat swapped fields in Taiwan region
             let lat = rawX, lng = rawY;
             if (rawX > 100) { lng = rawX; lat = rawY; }
-            
-            let events = independentEvents.filter(e => e['相機別名'] === cam);
+            let events = independentEvents.filter(e => e._cameraName === cam);
             let threats = globalThreatLogs.filter(t => t.camera === cam);
-            
-            mapData.push({
-              name: cam,
-              lat: lat,
-              lng: lng,
-              eventsCount: events.length,
-              threatsCount: threats.length,
-              sampleRow: sample
-            });
+            mapData.push({ name: cam, lat: lat, lng: lng, eventsCount: events.length, threatsCount: threats.length });
           }
         }
       });
       
       if (mapData.length === 0) {
-        mapContainer.innerHTML = `
-          <div class="flex items-center justify-center h-full w-full bg-slate-50 text-slate-400 text-xs font-bold text-center">
-            ⚠️ 載入之資料未包含經緯度座標欄位 (X座標, Y座標)
-          </div>
-        `;
+        mapContainer.innerHTML = `<div class="flex items-center justify-center h-full bg-slate-50 text-slate-400 text-xs font-bold text-center">⚠️ 未偵測到 GPS 經緯度座標數據</div>`;
         spotlightEmpty.classList.remove('hidden');
         spotlightDetails.classList.add('hidden');
         return;
       }
 
-      // Initialize Leaflet Map
-      mapInstance = L.map('map', {
-        zoomControl: true,
-        attributionControl: false
-      });
+      mapInstance = L.map('map', { zoomControl: true, attributionControl: false });
+      mapBaseLayers.satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
+      mapBaseLayers.street = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 20 });
 
-      // Configure Esri Satellite vs Carto Voyager base layers
-      mapBaseLayers.satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        maxZoom: 19
-      });
-      mapBaseLayers.street = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        maxZoom: 20
-      });
+      if (activeMapLayerName === 'satellite') mapInstance.addLayer(mapBaseLayers.satellite);
+      else mapInstance.addLayer(mapBaseLayers.street);
 
-      // Active Default Layer setup
-      if (activeMapLayerName === 'satellite') {
-        mapInstance.addLayer(mapBaseLayers.satellite);
-      } else {
-        mapInstance.addLayer(mapBaseLayers.street);
-      }
-
-      let markersGroup = [];
       let bounds = [];
-
-      // Add Custom Markers
       mapData.forEach(node => {
         const hasThreat = node.threatsCount > 0;
-        
-        // Define Custom HTML DivIcon to match Light Theme Premium Style
         const customIcon = L.divIcon({
           className: 'custom-div-icon',
-          html: `
-            <div class="relative flex items-center justify-center" style="width:24px; height:24px;">
-              ${hasThreat ? `
-                <span class="absolute inline-flex h-8 w-8 rounded-full bg-rose-500/40 animate-ping"></span>
-                <span class="relative rounded-full h-4.5 w-4.5 bg-rose-500 border-2 border-white shadow-[0_2px_8px_rgba(244,63,94,0.5)]"></span>
-              ` : `
-                <span class="relative rounded-full h-4.5 w-4.5 bg-emerald-500 border-2 border-white shadow-[0_2px_8px_rgba(16,185,129,0.5)]"></span>
-              `}
-            </div>
-          `,
-          iconSize: [24, 24],
-          iconAnchor: [12, 12]
+          html: `<div class="relative flex items-center justify-center" style="width:24px; height:24px;">
+            ${hasThreat ? `<span class="absolute inline-flex h-8 w-8 rounded-full bg-rose-500/40 animate-ping"></span><span class="relative rounded-full h-4.5 w-4.5 bg-rose-500 border-2 border-white shadow-md"></span>` : `<span class="relative rounded-full h-4.5 w-4.5 bg-emerald-500 border-2 border-white shadow-md"></span>`}
+          </div>`,
+          iconSize: [24, 24], iconAnchor: [12, 12]
         });
 
         let marker = L.marker([node.lat, node.lng], { icon: customIcon }).addTo(mapInstance);
+        marker.bindPopup(`<div class="p-1 font-sans"><h4 class="font-black text-slate-800 text-xs">${hasThreat ? '🚨' : '📹'} ${node.name}</h4><div class="text-[9px] text-slate-500 mt-1 font-mono">GPS: ${node.lat.toFixed(5)}, ${node.lng.toFixed(5)}</div></div>`);
         
-        // Popup configuration
-        let popupText = `
-          <div class="p-1 font-sans">
-            <h4 class="font-black text-slate-800 text-xs flex items-center gap-1">
-              ${hasThreat ? '🚨' : '📹'} ${node.name}
-            </h4>
-            <div class="text-[9px] text-slate-500 mt-1 font-mono">
-              GPS: ${node.lat.toFixed(5)}, ${node.lng.toFixed(5)}
-            </div>
-            <div class="flex gap-2 mt-1.5 text-[9px] font-bold">
-              <span class="text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">事件 ${node.eventsCount} 次</span>
-              ${hasThreat ? `<span class="text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded">威脅 ${node.threatsCount} 次</span>` : ''}
-            </div>
-          </div>
-        `;
-        marker.bindPopup(popupText);
-
-        // Click interaction triggers spotlight
-        marker.on('click', () => {
-          highlightCameraSpotlight(node.name);
-        });
-
-        markersGroup.push(marker);
+        marker.on('click', () => { highlightCameraSpotlight(node.name); });
         bounds.push([node.lat, node.lng]);
       });
 
-      // Auto-fit bounds
-      if (bounds.length > 0) {
-        mapInstance.fitBounds(bounds, { padding: [30, 30] });
-      }
-
-      // Sync custom controller button UI
+      if (bounds.length > 0) mapInstance.fitBounds(bounds, { padding: [30, 30] });
       switchBaseLayer(activeMapLayerName);
 
-      // ✨ Force rendering engine refresh of the Map dimensions inside Leaflet
-      setTimeout(() => {
-        if (mapInstance) mapInstance.invalidateSize();
-      }, 200);
+      setTimeout(() => { if (mapInstance) mapInstance.invalidateSize(); }, 200);
     }
 
     // Dynamic Camera Highlight Spotlight Detail panel
@@ -1201,15 +1240,15 @@
       emptyState.classList.add('hidden');
       detailsState.classList.remove('hidden');
       
-      let events = independentEvents.filter(e => e['相機別名'] === camName);
+      let events = independentEvents.filter(e => e._cameraName === camName);
       let threats = globalThreatLogs.filter(t => t.camera === camName);
       let activeDays = cameraDaysMap[camName] ? cameraDaysMap[camName].days : 0;
       
-      let sample = cleanedData.find(row => (row['相機別名'] || row['相機編號']) === camName);
+      let sample = cleanedData.find(row => row._cameraName === camName);
       let coordStr = "無 GPS 座標";
       if (sample) {
-        let x = parseFloat(sample['X座標']);
-        let y = parseFloat(sample['Y座標']);
+        let x = parseFloat(sample['X座標'] || sample['*X座標']);
+        let y = parseFloat(sample['Y座標'] || sample['*Y座標']);
         if (!isNaN(x) && !isNaN(y)) {
           coordStr = `${x.toFixed(5)}, ${y.toFixed(5)}`;
         }
@@ -1223,7 +1262,7 @@
       // Distinct species
       let speciesSet = new Set();
       events.forEach(e => {
-        if (e['俗名']) speciesSet.add(e['俗名']);
+        if (e._speciesName) speciesSet.add(e._speciesName);
       });
       
       const spContainer = document.getElementById('spotlightSpeciesList');
@@ -1256,18 +1295,12 @@
       }
     }
 
-    // ✨ Optimized Paginated Monthly OI Table Renderer (Solves browser main-thread slow-down)
-    function resetMonthlyOiPage() {
-      monthlyOiPage = 1;
-    }
-    
+    // Paginated Table Renders (Bypasses Browser Lag)
+    function resetMonthlyOiPage() { monthlyOiPage = 1; }
     function changeMonthlyOiPage(dir) {
       const maxPage = Math.ceil(filteredMonthlyOiList.length / monthlyOiPageSize) || 1;
       let next = monthlyOiPage + dir;
-      if (next >= 1 && next <= maxPage) {
-        monthlyOiPage = next;
-        renderMonthlyOiTable();
-      }
+      if (next >= 1 && next <= maxPage) { monthlyOiPage = next; renderMonthlyOiTable(); }
     }
 
     function renderMonthlyOiTable() {
@@ -1276,7 +1309,6 @@
       const tbody = document.getElementById('monthlyOiTableBody');
       tbody.innerHTML = '';
 
-      // 1. Filter dataset in-memory
       filteredMonthlyOiList = monthlyOiDataset.filter(item => {
         let matchesMonth = (selectedMonth === "ALL" || item.month === selectedMonth);
         let matchesQuery = (!query || item.camera.toLowerCase().includes(query) || item.species.toLowerCase().includes(query));
@@ -1285,17 +1317,12 @@
 
       const totalItems = filteredMonthlyOiList.length;
       const maxPage = Math.ceil(totalItems / monthlyOiPageSize) || 1;
-      
       if (monthlyOiPage > maxPage) monthlyOiPage = maxPage;
-      if (monthlyOiPage < 1) monthlyOiPage = 1;
 
-      // 2. Paginate array slice
       const startIdx = (monthlyOiPage - 1) * monthlyOiPageSize;
       const paginatedList = filteredMonthlyOiList.slice(startIdx, startIdx + monthlyOiPageSize);
-
       document.getElementById('monthlyOiPageInfo').textContent = `第 ${monthlyOiPage} / ${maxPage} 頁 (共 ${totalItems} 筆)`;
 
-      // 3. Render minimal paginated items
       if (paginatedList.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-400 text-xs">無符合的觀測資料</td></tr>`;
         return;
@@ -1309,42 +1336,27 @@
           if (mapInstance) {
             let sample = cleanedData.find(row => (row['相機別名'] || row['相機編號']) === item.camera);
             if (sample) {
-              let rawX = parseFloat(sample['X座標']);
-              let rawY = parseFloat(sample['Y座標']);
-              let lat = rawX, lng = rawY;
-              if (rawX > 100) { lng = rawX; lat = rawY; }
+              let rawX = parseFloat(sample['X座標']); let rawY = parseFloat(sample['Y座標']);
+              let lat = rawX, lng = rawY; if (rawX > 100) { lng = rawX; lat = rawY; }
               mapInstance.setView([lat, lng], 16);
             }
           }
         };
-        tr.innerHTML = `
-          <td class="py-2.5 px-4 font-mono text-slate-800 font-semibold">${item.month}</td>
+        tr.innerHTML = `<td class="py-2.5 px-4 font-mono text-slate-800 font-semibold">${item.month}</td>
           <td class="py-2.5 px-4 text-slate-700">${item.camera}</td>
           <td class="py-2.5 px-4 font-bold text-slate-900">${item.species}</td>
           <td class="py-2.5 px-4 text-center font-mono text-indigo-600 font-bold">${item.events}</td>
           <td class="py-2.5 px-4 text-center font-mono">${item.trapDays}</td>
-          <td class="py-2.5 px-4 text-right font-black text-cyan-600 font-mono">${item.oi}%</td>
-        `;
+          <td class="py-2.5 px-4 text-right font-black text-cyan-600 font-mono">${item.oi}%</td>`;
         tbody.appendChild(tr);
       });
     }
 
-    function filterMonthlyOiTable() {
-      // Handled by inline reactive change to avoid double rendering loop
-    }
-
-    // ✨ Optimized Paginated Cumulative OI Table
-    function resetOiTablePage() {
-      oiTablePage = 1;
-    }
-
+    function resetOiTablePage() { oiTablePage = 1; }
     function changeOiTablePage(dir) {
       const maxPage = Math.ceil(filteredOiTableList.length / oiTablePageSize) || 1;
       let next = oiTablePage + dir;
-      if (next >= 1 && next <= maxPage) {
-        oiTablePage = next;
-        renderOiTable();
-      }
+      if (next >= 1 && next <= maxPage) { oiTablePage = next; renderOiTable(); }
     }
 
     function renderOiTable() {
@@ -1358,13 +1370,10 @@
 
       const totalItems = filteredOiTableList.length;
       const maxPage = Math.ceil(totalItems / oiTablePageSize) || 1;
-
       if (oiTablePage > maxPage) oiTablePage = maxPage;
-      if (oiTablePage < 1) oiTablePage = 1;
 
       const startIdx = (oiTablePage - 1) * oiTablePageSize;
       const paginatedList = filteredOiTableList.slice(startIdx, startIdx + oiTablePageSize);
-
       document.getElementById('oiTablePageInfo').textContent = `第 ${oiTablePage} / ${maxPage} 頁 (共 ${totalItems} 筆)`;
 
       if (paginatedList.length === 0) {
@@ -1375,69 +1384,47 @@
       paginatedList.forEach(item => {
         let tr = document.createElement('tr');
         tr.className = "hover:bg-slate-50 transition-colors duration-150";
-        tr.innerHTML = `
-          <td class="py-2.5 px-4 font-semibold text-slate-700">${item.camera}</td>
+        tr.innerHTML = `<td class="py-2.5 px-4 font-semibold text-slate-700">${item.camera}</td>
           <td class="py-2.5 px-4 text-slate-800 font-bold">${item.species}</td>
           <td class="py-2.5 px-4 text-center text-slate-400 font-mono">${item.rawRecords}</td>
           <td class="py-2.5 px-4 text-center font-bold text-indigo-600 font-mono">${item.events}</td>
           <td class="py-2.5 px-4 text-center font-mono">${item.days}</td>
-          <td class="py-2.5 px-4 text-right font-black text-emerald-600 font-mono">${item.oi}%</td>
-        `;
+          <td class="py-2.5 px-4 text-right font-black text-emerald-600 font-mono">${item.oi}%</td>`;
         tbody.appendChild(tr);
       });
-    }
-
-    function filterOiTable() {
-      // Handled by inline reactive change to avoid double rendering loop
-    }
-
-    // ✨ Optimized Paginated Threat Table
-    function resetThreatPage() {
-      threatPage = 1;
     }
 
     function changeThreatPage(dir) {
       const maxPage = Math.ceil(filteredThreatList.length / threatPageSize) || 1;
       let next = threatPage + dir;
-      if (next >= 1 && next <= maxPage) {
-        threatPage = next;
-        renderThreatTableOnly();
-      }
+      if (next >= 1 && next <= maxPage) { threatPage = next; renderThreatTableOnly(); }
     }
 
     function renderThreatTableOnly() {
       const tbody = document.getElementById('threatTableBody');
       tbody.innerHTML = '';
-
       const totalItems = filteredThreatList.length;
       const maxPage = Math.ceil(totalItems / threatPageSize) || 1;
-
       if (threatPage > maxPage) threatPage = maxPage;
-      if (threatPage < 1) threatPage = 1;
 
       const startIdx = (threatPage - 1) * threatPageSize;
       const paginatedList = filteredThreatList.slice(startIdx, startIdx + threatPageSize);
-
       document.getElementById('threatPageInfo').textContent = `第 ${threatPage} / ${maxPage} 頁 (共 ${totalItems} 筆)`;
 
       if (paginatedList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-400 text-xs">目前無偵測到威脅紀錄</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-400 text-xs">目前無威脅紀錄</td></tr>`;
         return;
       }
 
       paginatedList.forEach(t => {
         let tr = document.createElement('tr');
         tr.className = "hover:bg-rose-50/30 transition-colors duration-150 text-xs";
-        
         let badgeClass = t.type.includes('傷') ? 'bg-rose-100 text-rose-700 border-rose-200' : 'bg-amber-100 text-amber-700 border-amber-200';
-        
-        tr.innerHTML = `
-          <td class="py-2 px-3 font-mono">${t.time}</td>
+        tr.innerHTML = `<td class="py-2 px-3 font-mono">${t.time}</td>
           <td class="py-2 px-3 font-semibold">${t.camera}</td>
           <td class="py-2 px-3 font-bold text-slate-800">${t.species}</td>
           <td class="py-2 px-3"><span class="px-2 py-0.5 rounded-full border text-[9px] font-bold ${badgeClass}">${t.type}</span></td>
-          <td class="py-2 px-3 text-slate-600 max-w-[180px] truncate" title="${t.desc}">${t.desc}</td>
-        `;
+          <td class="py-2 px-3 text-slate-600 max-w-[180px] truncate" title="${t.desc}">${t.desc}</td>`;
         tbody.appendChild(tr);
       });
     }
@@ -1446,119 +1433,35 @@
       globalThreatLogs = [];
       const dogKeywords = ['犬', '狗', '帶項圈', '項圈', 'dog'];
       const traumaKeywords = ['斷腿', '跛', '傷', '少腳', '截肢', '獸夾', '吊索', '山豬吊'];
-      
       let threatCount = 0;
       
       rawData.forEach(row => {
         let note = (row['備註'] || '').toLowerCase();
-        let species = (row['俗名'] || '').toLowerCase();
+        let species = (row._speciesName || '').toLowerCase();
         let isDog = dogKeywords.some(kw => species.includes(kw) || note.includes(kw));
         let isTrauma = traumaKeywords.some(kw => note.includes(kw));
         
         if (isDog || isTrauma) {
           threatCount++;
-          let time = (row['資料產生日期與時間'] || '').replace('\n', ' ');
-          let camera = row['相機別名'] || row['相機編號'] || '';
-          let desc = row['備註'] || '無詳細備註';
-          
-          let threatType = '';
-          if (isTrauma) {
-            threatType = '⚠️ 殘肢/獸夾傷病';
-          } else if (isDog) {
-            let collared = note.includes('項圈') ? ' (帶項圈)' : ' (無項圈)';
-            threatType = `🐕 流浪犬隻${collared}`;
+          let time = '';
+          for (let key in row) {
+            if (key.includes('資料產生日期')) {
+              time = row[key].replace('\n', ' ');
+              break;
+            }
           }
+          let camera = row._cameraName || '';
+          let desc = row['備註'] || '無詳細備註';
+          let threatType = isTrauma ? '⚠️ 殘肢/獸夾傷病' : `🐕 流浪犬隻${note.includes('項圈') ? ' (帶項圈)' : ' (無項圈)'}`;
 
-          globalThreatLogs.push({
-            time: time,
-            camera: camera,
-            species: row['俗名'] || '未知',
-            type: threatType,
-            desc: desc
-          });
+          globalThreatLogs.push({ time: time, camera: camera, species: row._speciesName || '未知', type: threatType, desc: desc });
         }
       });
       
-      document.getElementById('threatCountBadge').textContent = `本期偵測到 ${threatCount} 筆威脅記錄`;
-      
-      // Cache filtered threat list and trigger paginated render
+      document.getElementById('threatCountBadge').textContent = `${threatCount} 筆威脅紀錄`;
       filteredThreatList = globalThreatLogs;
       resetThreatPage();
       renderThreatTableOnly();
-    }
-
-    function exportOiTable() {
-      let csvContent = "data:text/csv;charset=utf-8,相機別名,物種俗名,原始紀錄數,獨立事件數(Events),相機運作天數,相對活動指數(OI%)\n";
-      rawCumulativeMatrix.forEach(item => {
-        csvContent += `${item.camera},${item.species},${item.rawRecords},${item.events},${item.days},${item.oi}\n`;
-      });
-      
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", `里山生態OI相對活動指數表_${new Date().toISOString().slice(0,10)}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-
-    function updateKpis() {
-      document.getElementById('kpiCameras').textContent = cameraList.length;
-      document.getElementById('kpiSpecies').textContent = speciesList.length;
-      document.getElementById('kpiRecords').textContent = rawData.length;
-      document.getElementById('kpiEvents').textContent = independentEvents.length;
-      
-      let totalDays = 0;
-      for (let cam in cameraDaysMap) {
-        totalDays += cameraDaysMap[cam].days;
-      }
-      document.getElementById('kpiTrapDays').textContent = totalDays;
-    }
-
-    function buildCameraDaysTable() {
-      const tbody = document.getElementById('cameraDaysTableBody');
-      tbody.innerHTML = '';
-      
-      for (let cam in cameraDaysMap) {
-        let info = cameraDaysMap[cam];
-        let formatDateStr = (d) => `${d.getFullYear()}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')}`;
-        
-        let tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="py-2 px-2 font-semibold text-slate-800">${cam}</td>
-          <td class="py-2 px-2 text-center bg-indigo-50/50 text-indigo-700 rounded-lg text-[10px]">${info.days} 天</td>
-          <td class="py-2 px-2 text-right text-[10px] text-slate-400">
-            ${formatDateStr(info.minDate)} ~ ${formatDateStr(info.maxDate)}
-          </td>
-        `;
-        tbody.appendChild(tr);
-      }
-    }
-
-    function populateDropdowns() {
-      const spFilter = document.getElementById('speciesFilter');
-      const rhythmFilter = document.getElementById('rhythmSpeciesFilter');
-      
-      spFilter.innerHTML = '';
-      rhythmFilter.innerHTML = '';
-      
-      speciesList.forEach((sp, idx) => {
-        let opt1 = document.createElement('option');
-        opt1.value = sp;
-        opt1.textContent = sp;
-        if (idx === 0) opt1.selected = true;
-        spFilter.appendChild(opt1);
-        
-        let opt2 = document.createElement('option');
-        opt2.value = sp;
-        opt2.textContent = sp;
-        if (idx === 0) opt2.selected = true;
-        rhythmSpeciesFilter.appendChild(opt2);
-      });
-    }
-
-    function buildOiTable() {
-      // Redefined as virtual pagination, handled by renderOiTable() directly to bypass duplicate matrix building overhead
     }
 
     // Dynamic Graphing Engine
@@ -1585,96 +1488,42 @@
       });
 
       independentEvents.forEach(row => {
-        let sp = row['俗名'];
+        let sp = row._speciesName;
         if (sp !== selectedSpecies) return;
-        
-        let cam = row['相機別名'];
+        let cam = row._cameraName;
         let d = row._jsDate;
         let yrMonth = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
         let monthIdx = sortedMonths.indexOf(yrMonth);
-        
-        if (monthIdx !== -1 && datasetMap[cam]) {
-          datasetMap[cam][monthIdx]++;
-        }
+        if (monthIdx !== -1 && datasetMap[cam]) datasetMap[cam][monthIdx]++;
       });
 
       let datasets = [];
-      const colors = [
-        'rgba(30, 58, 138, 0.85)',   
-        'rgba(16, 185, 129, 0.85)',  
-        'rgba(245, 158, 11, 0.85)',  
-        'rgba(239, 68, 68, 0.85)',   
-        'rgba(139, 92, 246, 0.85)',  
-      ];
+      const colors = ['rgba(30, 58, 138, 0.85)', 'rgba(16, 185, 129, 0.85)', 'rgba(245, 158, 11, 0.85)', 'rgba(239, 68, 68, 0.85)', 'rgba(139, 92, 246, 0.85)'];
 
       cameraList.forEach((cam, i) => {
         let color = colors[i % colors.length];
         let days = cameraDaysMap[cam] ? cameraDaysMap[cam].days : 30;
-        
-        let oiValues = datasetMap[cam].map(events => {
-          return parseFloat(((events / days) * 100).toFixed(2));
-        });
+        let oiValues = datasetMap[cam].map(events => parseFloat(((events / days) * 100).toFixed(2)));
 
         datasets.push({
-          label: cam,
-          data: oiValues,
-          borderColor: color,
-          backgroundColor: color.replace('0.85', '0.04'), // softer fill on light backgrounds
-          borderWidth: 2.5,
-          tension: 0.3,
-          fill: true,
-          pointBackgroundColor: color,
-          pointRadius: 3.5,
-          pointHoverRadius: 5
+          label: cam, data: oiValues, borderColor: color, backgroundColor: color.replace('0.85', '0.04'),
+          borderWidth: 2.5, tension: 0.3, fill: true, pointBackgroundColor: color, pointRadius: 3.5, pointHoverRadius: 5
         });
       });
 
-      if (monthlyTrendChartInstance) {
-        monthlyTrendChartInstance.destroy();
-      }
-
+      if (monthlyTrendChartInstance) monthlyTrendChartInstance.destroy();
       const ctx = document.getElementById('monthlyTrendChart').getContext('2d');
       monthlyTrendChartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: sortedMonths,
-          datasets: datasets
-        },
+        type: 'line', data: { labels: sortedMonths, datasets: datasets },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
+          responsive: true, maintainAspectRatio: false,
           plugins: {
-            legend: {
-              position: 'top',
-              labels: { font: { family: 'Noto Sans TC', weight: 'bold', size: 10 } }
-            },
-            tooltip: {
-              mode: 'index',
-              intersect: false,
-              titleFont: { family: 'Noto Sans TC', size: 11 },
-              bodyFont: { family: 'Noto Sans TC', size: 10 }
-            }
+            legend: { position: 'top', labels: { font: { family: 'Noto Sans TC', weight: 'bold', size: 9 } } },
+            tooltip: { mode: 'index', intersect: false, titleFont: { family: 'Noto Sans TC', size: 10 }, bodyFont: { family: 'Noto Sans TC', size: 9 } }
           },
           scales: {
-            y: {
-              beginAtZero: true,
-              grid: { color: '#f1f5f9' },
-              ticks: { font: { size: 9 } },
-              title: {
-                display: true,
-                text: '相對活動指數 (OI %)',
-                font: { family: 'Noto Sans TC', weight: 'bold', size: 9 }
-              }
-            },
-            x: {
-              grid: { display: false },
-              ticks: { font: { size: 9 } },
-              title: {
-                display: true,
-                text: '觀測月份 (YYYY-MM)',
-                font: { family: 'Noto Sans TC', weight: 'bold', size: 9 }
-              }
-            }
+            y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 9 } }, title: { display: true, text: '相對活動指數 (OI %)', font: { family: 'Noto Sans TC', weight: 'bold', size: 9 } } },
+            x: { grid: { display: false }, ticks: { font: { size: 9 } }, title: { display: true, text: '觀測月份 (YYYY-MM)', font: { family: 'Noto Sans TC', weight: 'bold', size: 9 } } }
           }
         }
       });
@@ -1688,259 +1537,32 @@
       let totalSpecEvents = 0;
 
       independentEvents.forEach(row => {
-        let sp = row['俗名'];
+        let sp = row._speciesName;
         if (sp !== selectedSpecies) return;
-
-        let d = row._jsDate;
-        let hour = d.getHours();
-        hourlyDistribution[hour]++;
-        totalSpecEvents++;
+        let d = row._jsDate; hourlyDistribution[d.getHours()]++; totalSpecEvents++;
       });
 
-      let hourlyPct = hourlyDistribution.map(count => {
-        return totalSpecEvents > 0 ? parseFloat(((count / totalSpecEvents) * 100).toFixed(2)) : 0;
-      });
+      let hourlyPct = hourlyDistribution.map(count => totalSpecEvents > 0 ? parseFloat(((count / totalSpecEvents) * 100).toFixed(2)) : 0);
 
-      if (rhythmChartInstance) {
-        rhythmChartInstance.destroy();
-      }
-
+      if (rhythmChartInstance) rhythmChartInstance.destroy();
       const ctx = document.getElementById('rhythmChart').getContext('2d');
       rhythmChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
           labels: Array.from({length: 24}, (_, i) => `${i.toString().padStart(2, '0')}:00`),
-          datasets: [{
-            label: `${selectedSpecies} 活動頻率百分比 (%)`,
-            data: hourlyPct,
-            backgroundColor: 'rgba(245, 158, 11, 0.65)',
-            borderColor: 'rgb(245, 158, 11)',
-            borderWidth: 1.5,
-            borderRadius: 4,
-            hoverBackgroundColor: 'rgba(245, 158, 11, 0.85)'
-          }]
+          datasets: [{ label: `${selectedSpecies} 活動頻率百分比 (%)`, data: hourlyPct, backgroundColor: 'rgba(245, 158, 11, 0.65)', borderColor: 'rgb(245, 158, 11)', borderWidth: 1.5, borderRadius: 4, hoverBackgroundColor: 'rgba(245, 158, 11, 0.85)' }]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { labels: { font: { family: 'Noto Sans TC', weight: 'bold', size: 10 } } }
-          },
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { labels: { font: { family: 'Noto Sans TC', weight: 'bold', size: 10 } } } },
           scales: {
-            y: {
-              beginAtZero: true,
-              grid: { color: '#f1f5f9' },
-              ticks: { font: { size: 9 } },
-              title: {
-                display: true,
-                text: '偵測比例 (%)',
-                font: { family: 'Noto Sans TC', weight: 'bold', size: 9 }
-              }
-            },
-            x: {
-              grid: { display: false },
-              ticks: { font: { size: 9 } },
-              title: {
-                display: true,
-                text: '全日小時 (Hour)',
-                font: { family: 'Noto Sans TC', weight: 'bold', size: 9 }
-              }
-            }
+            y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 9 } }, title: { display: true, text: '偵測比例 (%)', font: { family: 'Noto Sans TC', weight: 'bold', size: 9 } } },
+            x: { grid: { display: false }, ticks: { font: { size: 9 } }, title: { display: true, text: '全日小時 (Hour)', font: { family: 'Noto Sans TC', weight: 'bold', size: 9 } } }
           }
         }
       });
 
       classifyAllSpeciesRhythms();
-    }
-
-    let globalNocturnalList = [];
-    let globalDiurnalList = [];
-    let globalFlexibleList = [];
-
-    function classifyAllSpeciesRhythms() {
-      globalNocturnalList = [];
-      globalDiurnalList = [];
-      globalFlexibleList = [];
-
-      speciesList.forEach(sp => {
-        let dayCount = 0;
-        let nightCount = 0;
-
-        independentEvents.forEach(row => {
-          let rowSp = row['俗名'];
-          if (rowSp !== sp) return;
-          let hr = row._jsDate.getHours();
-          if (hr >= 6 && hr < 18) {
-            dayCount++;
-          } else {
-            nightCount++;
-          }
-        });
-
-        let total = dayCount + nightCount;
-        if (total === 0) return;
-
-        let dayRatio = dayCount / total;
-        let nightRatio = nightCount / total;
-
-        if (dayRatio >= 0.65) {
-          globalDiurnalList.push(sp);
-        } else if (nightRatio >= 0.65) {
-          globalNocturnalList.push(sp);
-        } else {
-          globalFlexibleList.push(sp);
-        }
-      });
-
-      document.getElementById('nocturnalSpeciesList').textContent = globalNocturnalList.length > 0 ? globalNocturnalList.join(', ') : '無符合物種';
-      document.getElementById('diurnalSpeciesList').textContent = globalDiurnalList.length > 0 ? globalDiurnalList.join(', ') : '無符合物種';
-      document.getElementById('flexibleSpeciesList').textContent = globalFlexibleList.length > 0 ? globalFlexibleList.join(', ') : '無符合物種';
-    }
-
-    // ==========================================
-    // ✨ GEMINI API LLM INTEGRATION CODE
-    // ==========================================
-
-    async function callGeminiAPI(prompt, systemInstruction) {
-      const apiKey = ""; // Runtime automatically provisions the key when string is empty
-      const url = `https://genergenerativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`
-        .replace("genergenerative", "generative"); // safeguards
-      
-      let delay = 1000;
-      for (let attempt = 1; attempt <= 5; attempt++) {
-        try {
-          const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
-              systemInstruction: { parts: [{ text: systemInstruction }] }
-            })
-          });
-          
-          if (!response.ok) {
-            throw new Error(`HTTP 錯誤狀態碼: ${response.status}`);
-          }
-          
-          const data = await response.json();
-          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (text) return text;
-          throw new Error("模型未回傳有效文字");
-        } catch (err) {
-          if (attempt === 5) {
-            throw new Error(`AI 分析請求失敗，已重試 5 次。錯誤詳情: ${err.message}`);
-          }
-          await new Promise(resolve => setTimeout(resolve, delay));
-          delay *= 2; // Exponential backoff: 1s, 2s, 4s, 8s, 16s
-        }
-      }
-    }
-
-    // Action 1: Ecological Threat Assessment & Conservation Plan
-    async function generateAiConservationReport() {
-      const overlay = document.getElementById('aiLoadingOverlay');
-      const output = document.getElementById('aiOutputContent');
-      
-      overlay.classList.remove('hidden');
-      
-      // Compile analytical context from actual data
-      const statsContext = {
-        totalCameras: cameraList.length,
-        cameras: cameraList,
-        totalSpecies: speciesList.length,
-        species: speciesList,
-        totalEvents: independentEvents.length,
-        traumaThreatCount: globalThreatLogs.filter(t => t.type.includes('殘肢')).length,
-        dogThreatCount: globalThreatLogs.filter(t => t.type.includes('流浪犬')).length,
-        detailedThreats: globalThreatLogs.slice(0, 15) // send top 15 records for fine-grained analysis
-      };
-
-      const systemPrompt = "你是一位資深生態學家、野生動物保育專家與里山農村永續發展顧問。你的任務是分析紅外線相機監測大數據，並針對環境中的「獸夾殘肢傷病（斷腿）」與「流浪/遊蕩犬隻（帶項圈與無項圈）」提出高學術水準、可落地的里山生態保育及社區管理策略報告。請使用繁體中文書寫，結構分明。";
-      
-      const userPrompt = `
-        以下是社區紅外線相機的最新實時統計數據與威脅日誌：
-        
-        [基本資料]
-        - 總觀測相機點位數：${statsContext.totalCameras} 個點位 (分別為: ${statsContext.cameras.join(', ')})
-        - 紀錄物種數：${statsContext.totalSpecies} 種 (${statsContext.species.join(', ')})
-        - 1小時歸併獨立事件總數：${statsContext.totalEvents} 次
-        
-        [威脅事件分析]
-        - 獸夾殘肢/斷腿/跛腳事件次數：${statsContext.traumaThreatCount} 次
-        - 流浪犬/遊蕩犬隻偵測次數：${statsContext.dogThreatCount} 次
-        
-        [關鍵威脅日誌（節錄）：]
-        ${JSON.stringify(statsContext.detailedThreats, null, 2)}
-        
-        請根據以上真實的相機數據：
-        1. **深度風險分析**：評估「斷腿傷殘（獸夾）」與「遊蕩犬隻」對當地野生動物（特別是山羌、白鼻心、鼬獾、石虎等哺乳類）在棲地排擠、獵捕壓力及心理壓力上的衝擊。特別點出哪些點位是高風險熱區。
-        2. **里山社區與果園邊界管理對策**：提出如何針對私有林地或果園的地主與農民，進行「無夾、無吊（山豬吊）友善里山農業」推廣與溝通倡議。
-        3. **遊蕩犬隻管理對策**：針對帶項圈（家犬放養）與無項圈（浪犬聚集）犬隻，提出社區型管理手段、動保對接 TNVR 策略。
-        4. **結論與行動清單**：為大茅埔調查團或相關社區協會開立 3 項最速推動之實踐行動。
-      `;
-
-      try {
-        const reply = await callGeminiAPI(userPrompt, systemPrompt);
-        output.innerHTML = `<div class="prose">${marked.parse(reply)}</div>`;
-      } catch (error) {
-        output.innerHTML = `
-          <div class="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-sm">
-            <strong class="block mb-1">❌ 智慧分析失敗</strong>
-            ${error.message}
-          </div>
-        `;
-      } finally {
-        overlay.classList.add('hidden');
-      }
-    }
-
-    // Action 2: Eco-Tourism Plan & Local Marketing Copy
-    async function generateAiMarketingPlan() {
-      const overlay = document.getElementById('aiLoadingOverlay');
-      const output = document.getElementById('aiOutputContent');
-      
-      overlay.classList.remove('hidden');
-
-      const statsContext = {
-        species: speciesList,
-        nocturnal: globalNocturnalList,
-        diurnal: globalDiurnalList,
-        flexible: globalFlexibleList,
-        totalEvents: independentEvents.length
-      };
-
-      const systemPrompt = "你是一位資深地方創生專家、ESG 企業永續行銷總監、與綠色里山生態旅遊規劃師。你的任務是根據紅外線相機揭示的物種活動節律特性（日夜行性、活躍度），為社區量身打造一套具備高度市場吸引力、文化深度與教育意義的永續里山旅遊企劃及推廣文案。請使用親切、溫暖且具故事性的客家農村筆調，繁體中文書寫。";
-
-      const userPrompt = `
-        以下是社區物種的日夜活動節律分析結果：
-        - 夜行性物種（夜間 18:00 - 06:00 活躍）：${statsContext.nocturnal.join(', ') || '無'}
-        - 日行性物種（日間 06:00 - 18:00 活躍）：${statsContext.diurnal.join(', ') || '無'}
-        - 晨昏/全天候活躍物種：${statsContext.flexible.join(', ') || '無'}
-        - 全物種名錄：${statsContext.species.join(', ')}
-        
-        請利用這些科學數據，結合社區特有的里山倡議、生態水圳、友善無毒水果耕作等里山農村特色，規劃以下內容：
-        1. **「野性里山之眼」低碳生態旅遊企劃**：
-           - 針對日行/晨昏物種，設計一套半日「低干擾生態廊道探索」路線與時間指引。
-           - 針對夜行性物種（如白鼻心、鼬獾），規劃「暗空里山・夜間精靈探秘」低碳漫遊行程.
-        2. **ESG 企業員工一日生態工作坊 (Corporate Eco-Volunteering)**：
-           - 設計如何吸引高科技企業（如鄰近的中科、竹科）來東勢大茅埔或里山社區進行里山 ESG 實踐、協助維護埤圳水質、棲地巡守、體驗相機架設等。
-        3. **里山永續 brand 宣傳文案 (Marketing Copy)**：
-           - 撰寫一段適合發佈在臉書 (Facebook) 或 IG 的吸睛故事，主題為「山羌與白鼻心在里山果園的秘密生活」，並用溫慢筆調推廣大茅埔友善農產品。
-      `;
-
-      try {
-        const reply = await callGeminiAPI(userPrompt, systemPrompt);
-        output.innerHTML = `<div class="prose">${marked.parse(reply)}</div>`;
-      } catch (error) {
-        output.innerHTML = `
-          <div class="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-sm">
-            <strong class="block mb-1">❌ 智慧規劃失敗</strong>
-            ${error.message}
-          </div>
-        `;
-      } finally {
-        overlay.classList.add('hidden');
-      }
     }
   </script>
 </body>
