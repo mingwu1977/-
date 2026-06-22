@@ -98,7 +98,7 @@
       </label>
       <input type="file" id="csvFileInput" accept=".csv, text/csv, text/comma-separated-values, application/vnd.ms-excel, text/plain" class="hidden" onchange="handleFileSelect(event)">
       
-      <button onclick="loadDemoData()" class="flex-grow sm:flex-grow-0 flex items-center justify-center gap-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 font-bold py-2.5 px-4 rounded-xl transition-all duration-200 text-xs shadow-sm min-h-[44px]">
+      <button onclick="loadDemoData()" class="flex-grow sm:flex-grow-0 flex items-center justify-center gap-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 font-bold py-2 px-4 rounded-xl transition-all duration-200 text-xs shadow-sm min-h-[44px]">
         <span>展示數據</span>
       </button>
     </div>
@@ -134,6 +134,29 @@
           將大茅埔調查團標準格式的物種資料表(CSV)拖曳到此處，或點擊瀏覽上傳。
         </p>
         <span class="text-[10px] text-slate-400 underline block mt-3.5 group-hover:text-emerald-600 font-bold">點擊開啟檔案瀏覽器</span>
+      </div>
+
+      <!-- ✨ Mobile Google Drive Integration Assistance Panel (Resolves grayed out CSV in Picker) -->
+      <div class="bg-emerald-50/80 border border-emerald-100 rounded-2xl p-4 text-left space-y-2.5">
+        <div class="flex items-center gap-2 font-bold text-emerald-950 text-xs">
+          <i class="fa-brands fa-google-drive text-lg text-emerald-600"></i>
+          <span>使用 Google Drive 雲端檔案提示</span>
+        </div>
+        <p class="text-[11px] text-emerald-800 leading-normal">
+          為避免 Android 系統對 CSV 檔案的識別限制，本平台已全面解鎖 Google Picker 寬容型篩選器。如在 Google Drive 介面中仍遇到點選問題，您可以使用以下兩種更穩定的方法載入雲端資料：
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1 text-[10px] text-slate-700">
+          <div class="bg-white p-3 rounded-xl border border-emerald-100 shadow-sm">
+            <span class="font-bold text-emerald-950 block mb-1">⚡ 推薦：發佈為連結</span>
+            在 Google 試算表中點選「檔案」➔「共用」➔「發佈到網路」，選擇格式為「CSV」，複製產生的網址直接貼到手機 Chrome 中訪問，安全性最高，解析也最快！
+          </div>
+          <div class="bg-white p-3 rounded-xl border border-emerald-100 shadow-sm flex flex-col justify-between">
+            <div>
+              <span class="font-bold text-emerald-950 block mb-1">📂 備用：手機雲端下載</span>
+              先在手機的「雲端硬碟 App」中找到該 CSV 檔案，點選右側三個點「下載」到手機儲存空間，接著返回本網頁點擊上方上傳即可。
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- ✨ Mobile Debugger Log Terminal (Provides visible feedback if mobile load fails) -->
@@ -342,16 +365,16 @@
           </div>
 
           <!-- Species 24-Hour Activity Rhythm Chart -->
-          <div class="bg-white p-4 md:p-5 rounded-2xl card-shadow border border-slate-100 lg:col-span-2">
+          <div class="bg-white p-5 rounded-2xl card-shadow border border-slate-100 lg:col-span-2">
             <div class="flex justify-between items-center mb-3">
               <div>
-                <h3 class="text-sm md:text-base font-bold text-slate-800 flex items-center gap-1.5">
-                  <span class="w-1.5 h-4.5 bg-amber-500 rounded-full inline-block"></span>
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-1.5">
+                  <span class="w-2 h-5 bg-amber-500 rounded-full inline-block"></span>
                   24 小時物種活動節律圖
                 </h3>
-                <p class="text-slate-400 text-[9px] mt-0.5">分析獨立有效偵測事件在 24 小時之時間頻率分佈（可切換不同物種）</p>
+                <p class="text-slate-400 text-[10px] mt-0.5">分析獨立有效偵測事件在 24 小時之時間頻率分佈（可切換不同物種）</p>
               </div>
-              <select id="rhythmSpeciesFilter" onchange="updateRhythmChart()" class="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-xl p-2 font-bold focus:outline-emerald-500">
+              <select id="rhythmSpeciesFilter" onchange="updateRhythmChart()" class="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg p-1.5 font-bold focus:outline-emerald-500">
                 <!-- Dynamic Options -->
               </select>
             </div>
@@ -361,10 +384,10 @@
           </div>
 
           <!-- Activity Categorization Summary -->
-          <div class="bg-white p-4 md:p-5 rounded-2xl card-shadow border border-slate-100 flex flex-col justify-between">
+          <div class="bg-white p-5 rounded-2xl card-shadow border border-slate-100 flex flex-col justify-between">
             <div>
-              <h3 class="text-sm md:text-base font-bold text-slate-800 mb-1 flex items-center gap-1.5">
-                <span class="w-1.5 h-4.5 bg-yellow-500 rounded-full inline-block"></span>
+              <h3 class="text-base font-bold text-slate-800 mb-1 flex items-center gap-1.5">
+                <span class="w-2 h-5 bg-yellow-500 rounded-full inline-block"></span>
                 物種日夜活動類型判定
               </h3>
               <p class="text-slate-400 text-[10px] mb-3">系統依據偵測時段自動分類物種適應型態</p>
@@ -372,11 +395,11 @@
               <div class="space-y-2 text-xs">
                 <div class="p-2 bg-indigo-50/50 rounded-lg border border-indigo-100/30 flex justify-between items-center">
                   <span class="text-indigo-800 font-bold flex items-center gap-1">🌙 典型夜行性</span>
-                  <span id="nocturnalSpeciesList" class="text-[9px] text-indigo-600 font-semibold text-right max-w-[160px] truncate">-</span>
+                  <span id="nocturnalSpeciesList" class="text-[10px] text-indigo-600 font-semibold text-right max-w-[160px] truncate">-</span>
                 </div>
                 <div class="p-2 bg-amber-50/50 rounded-lg border border-amber-100/30 flex justify-between items-center">
                   <span class="text-amber-800 font-bold flex items-center gap-1">☀️ 典型日行性</span>
-                  <span id="diurnalSpeciesList" class="text-[9px] text-amber-600 font-semibold text-right max-w-[160px] truncate">-</span>
+                  <span id="diurnalSpeciesList" class="text-[10px] text-amber-600 font-semibold text-right max-w-[160px] truncate">-</span>
                 </div>
                 <div class="p-2 bg-rose-50/50 rounded-lg border border-rose-100/30 flex justify-between items-center">
                   <span class="text-rose-800 font-bold flex items-center gap-1">🌅 晨昏/全天候性</span>
@@ -651,7 +674,7 @@
     // Mobile Active tab marker
     let activeMobileTabId = 'tab-map';
 
-    // ✨ Mobile Logger System: Output logs directly onto the HTML screen for quick diagnostics
+    // ✨ Mobile Logger System
     function logDebug(message, type = 'info') {
       const panel = document.getElementById('debugLogs');
       if (!panel) return;
@@ -666,20 +689,21 @@
       div.innerHTML = `&gt; ${new Date().toLocaleTimeString()} [${type.toUpperCase()}] ${message}`;
       
       panel.appendChild(div);
-      panel.scrollTop = panel.scrollHeight; // Auto-scroll to bottom
+      panel.scrollTop = panel.scrollHeight; 
       console.log(`[EcoDebugger] ${message}`);
     }
 
-    // ✨ Automatic Sandbox Detector for Android Chrome Local Open
+    // ✨ Automatic Sandbox Detector & Mobile Google Picker view resolver
     window.addEventListener('DOMContentLoaded', () => {
       logDebug("系統底層初始化完成，監聽各解析通道...");
-      const helper = document.getElementById('sandboxHelperCard');
-      const isContentProtocol = window.location.protocol === 'content:' || window.location.protocol === 'file:';
       const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       
-      if (isContentProtocol && isMobileDevice) {
-        helper.classList.remove('hidden');
-        logDebug("警告：偵測到您在 Android 本地沙盒 (content://) 環境下，讀取權限可能受限。", "warning");
+      // Inject high-compatibility mime types for Android Cloud Pickers
+      const input = document.getElementById('csvFileInput');
+      if (isMobileDevice && input) {
+        // Broaden MIME restrictions to let Google Drive allow user selection of CSVs
+        input.setAttribute('accept', '*/*');
+        logDebug("行動裝置偵測：已主動解鎖 Google Picker 與本地選取限制（已設為寬容型篩選模式）。", "success");
       }
     });
 
@@ -736,11 +760,8 @@
       e.preventDefault();
       dropZone.classList.remove('border-emerald-600', 'bg-emerald-50/55');
       const file = e.dataTransfer.files[0];
-      if (file && file.name.endsWith('.csv')) {
+      if (file) {
         handleMobileFileLoad(file);
-      } else {
-        showStatusAlert('error', '❌ 格式錯誤', '僅支援上傳擴充名為 .csv 的生態觀測大數據檔案！');
-        logDebug("拖曳檔案並非 .csv 格式，已拒絕解析。", "error");
       }
     });
 
@@ -758,7 +779,6 @@
     // ✨ HIGH-PERFORMANCE BINARY HEADER SNIFFER (Guarantees Big5 detection in all HTTPS environments)
     function detectIsBig5(arrayBuffer) {
       const view = new Uint8Array(arrayBuffer);
-      // Scan first 500 bytes for typical Big5 double-byte high ranges (0x81 - 0xFE)
       let big5Score = 0;
       let utf8Score = 0;
       
@@ -766,11 +786,9 @@
         const byte1 = view[i];
         const byte2 = view[i+1];
         
-        // Big5 ranges: lead byte 0x89-0xF9, trail byte 0x40-0x7E or 0xA1-0xFE
         if (byte1 >= 0x89 && byte1 <= 0xF9 && ((byte2 >= 0x40 && byte2 <= 0x7E) || (byte2 >= 0xA1 && byte2 <= 0xFE))) {
           big5Score++;
         }
-        // UTF-8 multibyte lead checks (e.g. 0xE4-0xE9 for common Chinese Hanzi)
         if (byte1 >= 0xE4 && byte1 <= 0xE9 && byte2 >= 0x80 && byte2 <= 0xBF) {
           utf8Score++;
         }
@@ -787,7 +805,7 @@
       
       binaryReader.onerror = function(err) {
         logDebug(`手機本地 FileReader 發生權限拒絕或讀取錯誤。錯誤詳細: ${err.target.error}`, "error");
-        showStatusAlert('error', '❌ 檔案讀取失敗', '手機系統可能限制了 Chrome 讀取此路徑下的檔案，建議換成在 Google 雲端碟下載之檔案選取。');
+        showStatusAlert('error', '❌ 檔案讀取失敗', '手機系統可能限制了 Chrome 讀取此路徑下的檔案，建議選取由雲端下載至本機之 CSV 檔案。');
       };
 
       binaryReader.onload = function(evt) {
@@ -804,7 +822,6 @@
         textReader.readAsText(file, isBig5 ? 'Big5' : 'UTF-8');
       };
       
-      // Read array buffer first to run binary checks safely without triggering silent browser crash
       binaryReader.readAsArrayBuffer(file);
     }
 
@@ -1172,7 +1189,6 @@
       cameraList.forEach(cam => {
         let sample = cleanedData.find(row => row._cameraName === cam);
         if (sample) {
-          // Robust Geoparsing via fuzzy column key lookups
           let rawX = NaN;
           let rawY = NaN;
           for (let key in sample) {
@@ -1295,7 +1311,7 @@
       }
     }
 
-    // Paginated Table Renders (Bypasses Browser Lag)
+    // Paginated Table Renders
     function resetMonthlyOiPage() { monthlyOiPage = 1; }
     function changeMonthlyOiPage(dir) {
       const maxPage = Math.ceil(filteredMonthlyOiList.length / monthlyOiPageSize) || 1;
@@ -1563,6 +1579,71 @@
       });
 
       classifyAllSpeciesRhythms();
+    }
+
+    // ==========================================
+    // ✨ GEMINI API LLM INTEGRATION CODE
+    // ==========================================
+    async function callGeminiAPI(prompt, systemInstruction) {
+      const apiKey = ""; 
+      const url = `https://genergenerativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`.replace("genergenerative", "generative");
+      let delay = 1000;
+      for (let attempt = 1; attempt <= 5; attempt++) {
+        try {
+          const response = await fetch(url, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], systemInstruction: { parts: [{ text: systemInstruction }] } })
+          });
+          if (!response.ok) throw new Error("HTTP 錯誤狀態碼: " + response.status);
+          const data = await response.json();
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) return text;
+          throw new Error("模型未回傳有效文字");
+        } catch (err) {
+          if (attempt === 5) throw new Error("AI 分析請求失敗，已重試 5 次。錯誤詳情: " + err.message);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          delay *= 2;
+        }
+      }
+    }
+
+    async function generateAiConservationReport() {
+      const overlay = document.getElementById('aiLoadingOverlay');
+      const output = document.getElementById('aiOutputContent');
+      overlay.classList.remove('hidden');
+      
+      const statsContext = {
+        totalCameras: cameraList.length, cameras: cameraList, totalSpecies: speciesList.length, species: speciesList, totalEvents: independentEvents.length,
+        traumaThreatCount: globalThreatLogs.filter(t => t.type.includes('殘肢')).length, dogThreatCount: globalThreatLogs.filter(t => t.type.includes('流浪犬')).length,
+        detailedThreats: globalThreatLogs.slice(0, 15)
+      };
+
+      const systemPrompt = "你是一位資神生態學家、野生動物保育專家與里山農村永續發展顧問。你的任務是分析紅外線相機監測大數據，並針對環境中的「獸夾殘肢傷病（斷腿）」與「流浪/遊蕩犬隻（帶項圈與無項圈）」提出高學術水準、可落地的里山生態保育及社區管理策略報告。請使用繁體中文書寫，結構分明。";
+      const userPrompt = `以下是社區紅外線相機的最新實時統計數據與威脅日誌：\n[基本資料]\n- 總觀測相機點位數：${statsContext.totalCameras} 個點位 (${statsContext.cameras.join(', ')})\n- 紀錄物種數：${statsContext.totalSpecies} 種 (${statsContext.species.join(', ')})\n- 1小時歸併獨立事件總數：${statsContext.totalEvents} 次\n[威脅事件]\n- 獸夾殘肢/斷腿/跛腳事件次數：${statsContext.traumaThreatCount} 次\n- 流浪犬/遊蕩犬隻偵測次數：${statsContext.dogThreatCount} 次\n[日誌節錄]：\n${JSON.stringify(statsContext.detailedThreats, null, 2)}\n請根據數據提出深度風險分析、里山社區果園邊界管理、遊蕩犬隻管理對策、與3項行動清單。`;
+
+      try {
+        const reply = await callGeminiAPI(userPrompt, systemPrompt);
+        output.innerHTML = `<div class="prose">${marked.parse(reply)}</div>`;
+      } catch (error) {
+        output.innerHTML = `<div class="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs"><strong>❌ 智慧分析失敗</strong><br>${error.message}</div>`;
+      } finally { overlay.classList.add('hidden'); }
+    }
+
+    async function generateAiMarketingPlan() {
+      const overlay = document.getElementById('aiLoadingOverlay');
+      const output = document.getElementById('aiOutputContent');
+      overlay.classList.remove('hidden');
+
+      const statsContext = { species: speciesList, nocturnal: globalNocturnalList, diurnal: globalDiurnalList, flexible: globalFlexibleList, totalEvents: independentEvents.length };
+      const systemPrompt = "你是一位資深地方創生專家、ESG 企業永續行銷總監、與綠色里山生態旅遊規劃師。你的任務是根據紅外線相機揭示的物種活動節律特性（日夜行性、活躍度），為社區量身打造一套具備高度市場吸引力、文化深度與教育意義的永續里山旅遊企劃及推廣文案。請使用親切、溫暖且具故事性的客家農村筆調，繁體中文書寫。";
+      const userPrompt = `以下是社區物種的日夜活動節律分析結果：\n- 夜行性物種：${statsContext.nocturnal.join(', ')}\n- 日行性物種：${statsContext.diurnal.join(', ')}\n- 晨昏/全天候活躍物種：${statsContext.flexible.join(', ')}\n請規劃一套「野性里山之眼」低碳生態旅遊行程、對接竹科/中科企業的 ESG 員工工作坊企劃、以及一段溫暖的里山品牌推廣文案。`;
+
+      try {
+        const reply = await callGeminiAPI(userPrompt, systemPrompt);
+        output.innerHTML = `<div class="prose">${marked.parse(reply)}</div>`;
+      } catch (error) {
+        output.innerHTML = `<div class="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs"><strong>❌ 智慧規劃失敗</strong><br>${error.message}</div>`;
+      } finally { overlay.classList.add('hidden'); }
     }
   </script>
 </body>
